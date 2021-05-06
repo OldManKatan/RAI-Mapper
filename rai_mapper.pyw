@@ -129,7 +129,10 @@ class RAIMapper:
 
         self.l_lm_title = ttk.Label(
             self.f_main, text="Menu", font=('Arial', 20, 'bold'), anchor=tk.CENTER)
-        self.l_lm_title.grid(row=0, column=0, padx=5, pady=20, sticky='ew')
+        self.l_lm_title.grid(row=0, column=0, padx=10, pady=20, sticky='ew')
+
+        self.sep_lm_sep10 = ttk.Separator(self.f_main)
+        self.sep_lm_sep10.grid(row=10, column=0, padx=20, pady=7, sticky='ew')
 
         self.b_lm_load = tk.Button(
             self.f_main,
@@ -141,10 +144,10 @@ class RAIMapper:
             padx=10,
             command=self.import_from_sbc
         )
-        self.b_lm_load.grid(row=1, column=0, padx=5, pady=2, sticky='ew')
+        self.b_lm_load.grid(row=11, column=0, padx=10, pady=2, sticky='ew')
 
-        self.sep_lm_sep1 = ttk.Separator(self.f_main)
-        self.sep_lm_sep1.grid(row=2, column=0, padx=10, pady=7, sticky='ew')
+        self.sep_lm_sep20 = ttk.Separator(self.f_main)
+        self.sep_lm_sep20.grid(row=20, column=0, padx=20, pady=7, sticky='ew')
 
         self.b_lm_exp_csv = tk.Button(
             self.f_main,
@@ -157,7 +160,7 @@ class RAIMapper:
             command=self.export_to_csv,
             state="disabled"
         )
-        self.b_lm_exp_csv.grid(row=3, column=0, padx=5, pady=2, sticky='ew')
+        self.b_lm_exp_csv.grid(row=21, column=0, padx=10, pady=2, sticky='ew')
 
         self.b_lm_exp_json = tk.Button(
             self.f_main,
@@ -170,10 +173,10 @@ class RAIMapper:
             command=self.export_to_json,
             state="disabled"
         )
-        self.b_lm_exp_json.grid(row=4, column=0, padx=5, pady=2, sticky='ew')
+        self.b_lm_exp_json.grid(row=22, column=0, padx=10, pady=2, sticky='ew')
 
         self.sep_lm_sep50 = ttk.Separator(self.f_main)
-        self.sep_lm_sep50.grid(row=50, column=0, padx=10, pady=7, sticky='ew')
+        self.sep_lm_sep50.grid(row=50, column=0, padx=20, pady=7, sticky='ew')
 
         self.b_lm_quit = tk.Button(
             self.f_main,
@@ -185,10 +188,10 @@ class RAIMapper:
             padx=10,
             command=self.root.destroy
         )
-        self.b_lm_quit.grid(row=99, column=0, padx=5, pady=2, sticky='ew')
+        self.b_lm_quit.grid(row=99, column=0, padx=10, pady=10, sticky='ew')
 
         self.sep_lm_sepright = ttk.Separator(self.f_main, orient=tk.VERTICAL)
-        self.sep_lm_sepright.grid(row=0, column=1, rowspan=99, padx=5, pady=5, sticky='ns')
+        self.sep_lm_sepright.grid(row=0, column=1, rowspan=100, padx=5, pady=5, sticky='ns')
 
         self.tabs = ttk.Notebook(self.f_main)
 
