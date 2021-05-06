@@ -223,7 +223,7 @@ class RAIMapper:
         self.threat_tab.grid_columnconfigure(0, weight=1)
         self.threat_tab.grid_rowconfigure(1, weight=1)
 
-        self.tabs.add(self.threat_tab, text='SG by Threat')
+        self.tabs.add(self.threat_tab, text='SG Filter')
 
         self.summ_frame = ttk.Frame(self.summ_tab)
         self.summ_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
