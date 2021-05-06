@@ -28,7 +28,7 @@ __SG Filter__: This tab is much like the __Spawn Groups__ tab, except that it al
 
 ## **Exporting Data**
 
-__Export CSV__: This button will enable once data is loaded and allows you to create two .csv files (*export_spawngroups.csv* and *export_components.csv*) that contain all of the data discovered by RAI-Mapper. This is useful for advanced sorting and analysis tasks that RAI-Mapper doesn't do matively.
+__Export CSV__: This button will enable once data is loaded and allows you to create two .csv files (*export_spawngroups.csv* and *export_components.csv*) that contain all of the data discovered by RAI-Mapper. This is useful for advanced sorting and analysis tasks that RAI-Mapper doesn't do natively.
 
 __Export CSV__: This button will enable once data is loaded and allows you to create two .json files (*export_spawngroups.json* and *export_components.json*) that is a json representation of the RAI-Mapper internal dataset. These are human readable and should allow you to quicly get information that you can't access natively in RAI-Mapper.
 
