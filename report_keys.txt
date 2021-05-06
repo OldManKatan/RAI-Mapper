@@ -1,0 +1,5 @@
+ThreatScoreMinimum
+ThreatScoreMaximum
+UseRivalAi
+RivalAiReplaceRemoteControl
+ReplenishSystems
