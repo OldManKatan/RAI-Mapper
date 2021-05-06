@@ -1,7 +1,7 @@
 # RAI-Mapper
 A tool for managing mods built using Lucas/Meridius IX's "Modular Encounter Spawner"
 
-This is a GUI based tool that can load an MES mod into a custom dataset that allows you to quickly get and overview, analyze spawngroups and RAI components, and get a detailed report of potential issues. 
+This is a GUI based tool that can load an MES mod into a custom dataset that allows you to quickly get an overview, analyze spawngroups and RAI components, and get a detailed report of potential issues. 
 
 ## **How to use**
 
