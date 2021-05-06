@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
+import csv
 import json
 from inc.import_spawngroups import import_spawngroups
 from inc.import_components import import_components
@@ -145,6 +146,35 @@ class RAIMapper:
         self.sep_lm_sep1 = ttk.Separator(self.f_main)
         self.sep_lm_sep1.grid(row=2, column=0, padx=10, pady=7, sticky='ew')
 
+        self.b_lm_exp_csv = tk.Button(
+            self.f_main,
+            text="Export CSV",
+            relief="flat",
+            background="#4260d6",
+            foreground="#C3C3C3",
+            font=('Arial', 16, 'bold'),
+            padx=10,
+            command=self.export_to_csv,
+            state="disabled"
+        )
+        self.b_lm_exp_csv.grid(row=3, column=0, padx=5, pady=2, sticky='ew')
+
+        self.b_lm_exp_json = tk.Button(
+            self.f_main,
+            text="Export JSON",
+            relief="flat",
+            background="#4260d6",
+            foreground="#C3C3C3",
+            font=('Arial', 16, 'bold'),
+            padx=10,
+            command=self.export_to_json,
+            state="disabled"
+        )
+        self.b_lm_exp_json.grid(row=4, column=0, padx=5, pady=2, sticky='ew')
+
+        self.sep_lm_sep50 = ttk.Separator(self.f_main)
+        self.sep_lm_sep50.grid(row=50, column=0, padx=10, pady=7, sticky='ew')
+
         self.b_lm_quit = tk.Button(
             self.f_main,
             text="Quit",
@@ -155,7 +185,7 @@ class RAIMapper:
             padx=10,
             command=self.root.destroy
         )
-        self.b_lm_quit.grid(row=3, column=0, padx=5, pady=2, sticky='ew')
+        self.b_lm_quit.grid(row=99, column=0, padx=5, pady=2, sticky='ew')
 
         self.sep_lm_sepright = ttk.Separator(self.f_main, orient=tk.VERTICAL)
         self.sep_lm_sepright.grid(row=0, column=1, rowspan=99, padx=5, pady=5, sticky='ns')
@@ -343,6 +373,9 @@ class RAIMapper:
 
         self.populate_summary(returned_spawngroup_data['summary'], returned_component_data['summary'])
         self.populate_details(returned_component_data['detail'])
+
+        self.b_lm_exp_csv["state"] = "normal"
+        self.b_lm_exp_json["state"] = "normal"
 
     def populate_summary(self, sg_summ_dict, comp_summ_dict):
         self.summ_frame = ttk.Frame(self.summ_tab)
@@ -646,6 +679,120 @@ class RAIMapper:
 
         self.threat_sg_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
         self.threat_sg_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
+
+    def export_to_csv(self):
+        # =======================================================================================
+        # Write the results out to a simple csv report, format as we go
+        # =======================================================================================
+
+        print('Creating Spawngroup report file...')
+
+        keys_to_report_on = [
+            'FactionOwner',
+            'SpaceCargoShip',
+            'SpaceRandomEncounter',
+            'LunarCargoShip',
+            'AtmosphericCargoShip',
+            'PlanetaryInstallation'
+        ]
+
+        with open(r'report_keys.txt', 'r') as report_keys_file:
+            for a_key in report_keys_file.readlines():
+                if len(a_key) > 0 and not a_key.startswith('#') and not a_key == 'FactionOwner':
+                    keys_to_report_on.append(a_key.strip())
+
+        if self.debug:
+            print('Imported Keys:')
+            for this_key in keys_to_report_on:
+                print(f'    {this_key}')
+            print('\n')
+
+        with open('export_spawngroups.csv', 'w', newline='') as csv_file:
+            headers = [
+                'TriggeredOnly',
+                'SubtypeId',
+                'IsPirate',
+                'Frequency',
+                'Prefabs'
+            ]
+            all_fields = headers + keys_to_report_on
+
+            csv_writer = csv.writer(csv_file, dialect='excel')
+            csv_writer.writerow(all_fields)
+
+            print('Generating report...')
+
+            for each_sg in self.spawngroup_dict:
+                if len(each_sg) == 0:
+                    continue
+                triggered_only = 'false'
+                if (self.spawngroup_dict[each_sg]['SpaceCargoShip'] == 'false' and
+                        self.spawngroup_dict[each_sg]['SpaceRandomEncounter'] == 'false' and
+                        self.spawngroup_dict[each_sg]['LunarCargoShip'] == 'false' and
+                        self.spawngroup_dict[each_sg]['AtmosphericCargoShip'] == 'false' and
+                        self.spawngroup_dict[each_sg]['PlanetaryInstallation'] == 'false'):
+                    self.spawngroup_dict[each_sg]['TriggeredOnly'] = 'true'
+                else:
+                    self.spawngroup_dict[each_sg]['TriggeredOnly'] = 'false'
+
+                this_row = [triggered_only]
+                for a_field in all_fields:
+                    if a_field == 'Prefabs':
+                        prefab_str = ''
+                        for each_prefab in self.spawngroup_dict[each_sg]['Prefabs']:
+                            # tp = all_sg[each_sg]['Prefabs'][each_prefab]
+                            if len(prefab_str) > 0:
+                                prefab_str = prefab_str + '\n'
+                            prefab_str = f"{prefab_str}{each_prefab['Prefab']} - {each_prefab['Behaviour']} " \
+                                f"({each_prefab['X']}, {each_prefab['Y']}, {each_prefab['Z']}) " \
+                                f"{each_prefab['Speed']}m/s"
+                        this_row.append(f'{prefab_str}')
+                    elif a_field == 'TriggeredOnly':
+                        continue
+                    else:
+                        this_row.append(f'{self.spawngroup_dict[each_sg][a_field]}')
+                csv_writer.writerow(this_row)
+
+        print('Spawngroup Report generated and written successfully!')
+
+        print('Creating components report file...')
+
+        with open('export_components.csv', 'w', newline='') as csv_file:
+            headers = [
+                'Key',
+                'Name',
+                'Type',
+                'Description',
+                'File',
+                'Child Components'
+            ]
+
+            csv_writer = csv.writer(csv_file, dialect='excel')
+            csv_writer.writerow(headers)
+
+            print('Generating report...')
+
+            for comp_key in self.component_dict:
+                this_comp = self.component_dict[comp_key]
+
+                this_row = [
+                    comp_key,
+                    this_comp['name'],
+                    this_comp['type'],
+                    this_comp['desc'],
+                    this_comp['file'],
+                    ', '.join([str(a_call) for a_call in this_comp['calls']])
+                ]
+                csv_writer.writerow(this_row)
+
+        print('Component report generated and written successfully!')
+
+    def export_to_json(self):
+        with open('export_spawngroups.json', 'w') as json_file:
+            json_file.write(json.dumps(self.spawngroup_dict, indent=2))
+
+        with open("export_components.json", 'w') as json_file:
+            json.dump(self.component_dict, json_file, indent=2)
 
 
 if __name__ == '__main__':

@@ -2,9 +2,7 @@ import xml.etree.ElementTree as ET
 from pprint import pprint
 import os
 import re
-import csv
 from inc.all_sg_keys import all_spawn_keys
-import json
 
 
 def import_spawngroups(search_dir, debug=False):
@@ -144,63 +142,23 @@ def import_spawngroups(search_dir, debug=False):
                 if len(this_data['SubtypeId']) > 0:
                     all_sg[this_data['SubtypeId']] = this_data
 
+    for each_sg in all_sg:
+        if len(each_sg) == 0:
+            continue
+        triggered_only = 'false'
+        if (all_sg[each_sg]['SpaceCargoShip'] == 'false' and
+                all_sg[each_sg]['SpaceRandomEncounter'] == 'false' and
+                all_sg[each_sg]['LunarCargoShip'] == 'false' and
+                all_sg[each_sg]['AtmosphericCargoShip'] == 'false' and
+                all_sg[each_sg]['PlanetaryInstallation'] == 'false'):
+            all_sg[each_sg]['TriggeredOnly'] = 'true'
+        else:
+            all_sg[each_sg]['TriggeredOnly'] = 'false'
+
     if debug:
         pprint(all_sg,  width=160)
 
-    # =======================================================================================
-    # Write the results out to a simple csv report, format as we go
-    # =======================================================================================
-
-    print('Creating report file...')
-
-    with open('sg_report.csv', 'w', newline='') as csv_file:
-        headers = [
-            'TriggeredOnly',
-            'SubtypeId',
-            'IsPirate',
-            'Frequency',
-            'Prefabs'
-        ]
-        all_fields = headers + keys_to_report_on
-
-        csv_writer = csv.writer(csv_file, dialect='excel')
-        csv_writer.writerow(all_fields)
-
-        print('Generating report...')
-
-        for each_sg in all_sg:
-            if len(each_sg) == 0:
-                continue
-            triggered_only = 'false'
-            if (all_sg[each_sg]['SpaceCargoShip'] == 'false' and
-                    all_sg[each_sg]['SpaceRandomEncounter'] == 'false' and
-                    all_sg[each_sg]['LunarCargoShip'] == 'false' and
-                    all_sg[each_sg]['AtmosphericCargoShip'] == 'false' and
-                    all_sg[each_sg]['PlanetaryInstallation'] == 'false'):
-                all_sg[each_sg]['TriggeredOnly'] = 'true'
-            else:
-                all_sg[each_sg]['TriggeredOnly'] = 'false'
-
-            this_row = [triggered_only]
-            for a_field in all_fields:
-                if a_field == 'Prefabs':
-                    prefab_str = ''
-                    for each_prefab in all_sg[each_sg]['Prefabs']:
-                        # tp = all_sg[each_sg]['Prefabs'][each_prefab]
-                        if len(prefab_str) > 0:
-                            prefab_str = prefab_str + '\n'
-                        prefab_str = f"{prefab_str}{each_prefab['Prefab']} - {each_prefab['Behaviour']} " \
-                                     f"({each_prefab['X']}, {each_prefab['Y']}, {each_prefab['Z']}) {each_prefab['Speed']}m/s"
-                    this_row.append(f'{prefab_str}')
-                elif a_field == 'TriggeredOnly':
-                    continue
-                else:
-                    this_row.append(f'{all_sg[each_sg][a_field]}')
-            csv_writer.writerow(this_row)
-
     spawn_groups_reported = len(all_sg)
-
-    print('Report generated and written successfully!')
 
     print(f"""
 Output  Summary
@@ -210,9 +168,6 @@ Output  Summary
     {spawn_groups_checked:>4} : Spawn Groups Found
     {spawn_groups_reported:>4} : Spawn Groups Reported
 """)
-
-    with open('SpawnGroups.json', 'w') as json_file:
-        json_file.write(json.dumps(all_sg, indent=4))
 
     return {
         'summary': {

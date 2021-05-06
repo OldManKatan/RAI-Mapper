@@ -50,20 +50,36 @@ def import_components(search_dir, debug=False):
     # Analyze each file, one at a time, and extract spawngroup information
     # =======================================================================================
 
-    match_type = re.compile(r'\[RivalAI (Behavior|Autopilot|Target|TriggerGroup|Trigger|Action|Chat|Spawn)\]')
+    match_type = re.compile(
+        r'\[RivalAI (Action|Autopilot|Behavior|Chat|Command|Condition|Spawn|Target|Trigger|TriggerGroup|Waypoint)\]')
 
-    match_pri_autopilot = re.compile(r'\[AutopilotData:(\S+)\]')
-    match_sec_autopilot = re.compile(r'\[SecondaryAutopilotData:(\S+)\]')
+    match_action_data = re.compile(r'\[Actions:(\S+)\]')
+    match_pri_autopilot_data = re.compile(r'\[AutopilotData:(\S+)\]')
+    match_sec_autopilot_data = re.compile(r'\[SecondaryAutopilotData:(\S+)\]')
+    match_chat_data = re.compile(r'\[ChatData:(\S+)\]')
+    match_command_data = re.compile(r'\[CommandProfileIds:(\S+)\]')
+    match_condition_data = re.compile(r'\[Conditions:(\S+)\]')
+    match_spawn_data = re.compile(r'\[Spawner:(\S+)\]')
     match_target_data = re.compile(r'\[TargetData:(\S+)\]')
     match_sec_target_data = re.compile(r'\[OverrideTargetData:(\S+)\]')
-    match_trigger_group = re.compile(r'\[TriggerGroups:(\S+)\]')
-    match_trigger = re.compile(r'\[Triggers:(\S+)\]')
-    match_action = re.compile(r'\[Actions:(\S+)\]')
-    match_chat_data = re.compile(r'\[ChatData:(\S+)\]')
-    match_spawner = re.compile(r'\[Spawner:(\S+)\]')
+    match_trigger_data = re.compile(r'\[Triggers:(\S+)\]')
+    match_triggergroup_data = re.compile(r'\[TriggerGroups:(\S+)\]')
+    match_waypoint_data = re.compile(r'\[Waypoint:(\S+)\]')
 
-    matches = [match_pri_autopilot, match_sec_autopilot, match_target_data, match_sec_target_data,
-               match_trigger_group, match_trigger, match_action, match_chat_data, match_spawner]
+    matches = [
+        match_action_data,
+        match_pri_autopilot_data,
+        match_sec_autopilot_data,
+        match_chat_data,
+        match_command_data,
+        match_condition_data,
+        match_spawn_data,
+        match_target_data,
+        match_sec_target_data,
+        match_trigger_data,
+        match_triggergroup_data,
+        match_waypoint_data
+    ]
 
     all_comps = {}
     name_to_key = {}
@@ -218,9 +234,6 @@ Output  Summary
     {comps_duplicate:>4} : Duplicate Definitions
     {len(errors):>4} : File Errors
 """)
-
-    with open("comp_dump.json", 'w') as json_file:
-        json.dump(all_comps, json_file, indent=2)
 
     return {
         'summary': {
