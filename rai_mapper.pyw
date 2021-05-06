@@ -96,6 +96,14 @@ class RAIMapper:
                         "expand": [("selected", [1, 1, 1, 0])]
                     }
                 },
+                "TScrollbar": {
+                    "configure": {
+                        "arrowcolor": "#303030",
+                        "background": "#C3C3C3",
+                        "foreground ": "#C3C3C3",
+                        "troughcolor": "#303030"
+                    }
+                },
                 "Treeview": {
                     "configure": {
                         "bordercolor": "#303030",
@@ -223,6 +231,11 @@ class RAIMapper:
 
         self.sg_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
 
+        self.sg_tree_yscroll = ttk.Scrollbar(
+            self.sg_tab, orient='vertical', command=self.sg_tree.yview)
+        self.sg_tree.configure(yscrollcommand=self.sg_tree_yscroll.set)
+        self.sg_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
+
         self.comp_tree = ttk.Treeview(self.comp_tab)
         self.comp_tree["columns"] = "type"
         self.comp_tree.column("#0", width=500, stretch=False)
@@ -233,6 +246,11 @@ class RAIMapper:
         self.comp_tree.bind('<<TreeviewOpen>>', self.handle_open_event)
 
         self.comp_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+
+        self.comp_tree_yscroll = ttk.Scrollbar(
+            self.comp_tab, orient='vertical', command=self.comp_tree.yview)
+        self.comp_tree.configure(yscrollcommand=self.comp_tree_yscroll.set)
+        self.comp_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
 
         self.threat_select_frame = ttk.Frame(self.threat_tab)
         self.threat_select_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
@@ -295,6 +313,12 @@ class RAIMapper:
         self.threat_sg_tree.insert("", 1, "", text="No data loaded...", values=(""))
 
         self.threat_sg_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+
+        self.threat_sg_tree_yscroll = ttk.Scrollbar(
+            self.threat_output_frame, orient='vertical', command=self.threat_sg_tree.yview)
+        self.threat_sg_tree.configure(yscrollcommand=self.threat_sg_tree_yscroll.set)
+
+        self.threat_sg_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
 
         self.f_main.grid(row=0, column=0, padx=0, pady=0, sticky='nsew')
 
@@ -474,6 +498,10 @@ class RAIMapper:
                     self.sg_tree.insert(last_iid, 1, "", text=a_key, values=(f"{a_value}", ))
 
         self.sg_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+        self.sg_tree_yscroll = ttk.Scrollbar(
+            self.sg_tab, orient='vertical', command=self.sg_tree.yview)
+        self.sg_tree.configure(yscrollcommand=self.sg_tree_yscroll.set)
+        self.sg_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
 
     def populate_components(self):
         self.comp_tree = ttk.Treeview(self.comp_tab)
@@ -511,6 +539,11 @@ class RAIMapper:
 
         self.comp_tree.bind('<<TreeviewOpen>>', self.handle_open_event)
         self.comp_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+
+        self.comp_tree_yscroll = ttk.Scrollbar(
+            self.comp_tab, orient='vertical', command=self.comp_tree.yview)
+        self.comp_tree.configure(yscrollcommand=self.comp_tree_yscroll.set)
+        self.comp_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
 
     def add_comp_node(self, this_key, last_iid):
         # for item_key, item_value in comp_dict[this_key].items():
@@ -607,7 +640,12 @@ class RAIMapper:
                     else:
                         self.threat_sg_tree.insert(last_iid, 1, "", text=a_key, values=(f"{a_value}", ))
 
+        self.threat_sg_tree_yscroll = ttk.Scrollbar(
+            self.threat_output_frame, orient='vertical', command=self.threat_sg_tree.yview)
+        self.threat_sg_tree.configure(yscrollcommand=self.threat_sg_tree_yscroll.set)
+
         self.threat_sg_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+        self.threat_sg_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
 
 
 if __name__ == '__main__':
