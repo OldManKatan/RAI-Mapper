@@ -16,6 +16,10 @@ def check_threat(new_value):
 
 class RAIMapper:
     def __init__(self, root):
+        self.root = root
+        self.root.title("RAI-Mapper")
+        self.chk_thr = self.root.register(check_threat)
+
         self.parent_file_path = ''
         self.spawngroup_dict = {}
         self.component_dict = {}
@@ -23,9 +27,16 @@ class RAIMapper:
         self.player_threat_value = tk.IntVar()
         self.player_threat_value.set(-1)
         self.include_non_triggeredonly = tk.IntVar()
-        self.include_non_triggeredonly.set(1)
+        self.include_non_triggeredonly.set(0)
         self.include_triggeredonly = tk.IntVar()
         self.include_triggeredonly.set(1)
+
+        self.include_acs = tk.IntVar()
+        self.include_acs.set(1)
+        self.include_lcs = tk.IntVar()
+        self.include_lcs.set(1)
+        self.include_pi = tk.IntVar()
+        self.include_pi.set(1)
         self.include_sre = tk.IntVar()
         self.include_sre.set(1)
         self.include_scs = tk.IntVar()
@@ -33,13 +44,11 @@ class RAIMapper:
 
         self.debug = False
 
-        self.root = root
-        self.chk_thr = self.root.register(check_threat)
-
         self.style = ttk.Style()
+        print(self.style.theme_names())
 
         self.style.theme_create(
-            "raim_theme", parent="alt", settings={
+            "raim_theme", parent="", settings={
                 ".": {
                     "configure": {
                         "background": "#303030",
@@ -49,10 +58,32 @@ class RAIMapper:
                         "borderwidth": 0
                     }
                 },
-                "TCheckButton": {
+                "TCheckbutton": {
                     "configure": {
                         "background": "#303030",
-                        "foreground": "#000000"
+                        "compound": "#C3C3C3",
+                        "foreground": "#4260d6",
+                        "indicatorbackground": "#303030",
+                        "indicatorcolor": "#C3C3C3",
+                        "relief": "flat",
+                        "indicatorrelief": "flat",
+                        "indicatordiameter": 20,
+                        "indicatormargin": 0,
+                        "borderwidth": 2
+                    },
+                    "map": {
+                        "indicatorcolor": [("selected", "#4260d6")],
+                        "indicatorrelief": [("selected", "groove")],
+                        "bordercolor": [("selected", "#4260d6")],
+                    }
+
+                },
+                "TEntry": {
+                    "configure": {
+                        "background": "#303030",
+                        "foreground": "#4260d6",
+                        "padding": 2,
+                        "margin": 0
                     }
                 },
                 "TFrame": {
@@ -188,10 +219,10 @@ class RAIMapper:
             padx=10,
             command=self.root.destroy
         )
-        self.b_lm_quit.grid(row=99, column=0, padx=10, pady=10, sticky='ew')
+        self.b_lm_quit.grid(row=98, column=0, padx=10, pady=10, sticky='ew')
 
         self.sep_lm_sepright = ttk.Separator(self.f_main, orient=tk.VERTICAL)
-        self.sep_lm_sepright.grid(row=0, column=1, rowspan=100, padx=5, pady=5, sticky='ns')
+        self.sep_lm_sepright.grid(row=0, column=1, rowspan=99, padx=5, pady=5, sticky='ns')
 
         self.tabs = ttk.Notebook(self.f_main)
 
@@ -254,7 +285,14 @@ class RAIMapper:
         self.l_det_nodata.grid(row=0, column=0, padx=5, pady=5, sticky='nw')
 
         self.sg_tree = ttk.Treeview(self.sg_tab)
-        self.sg_tree["columns"] = ["Triggered", "Faction", "SpaceRandomEncounter", "SpaceCargoShip"]
+        self.sg_tree["columns"] = [
+            "Triggered",
+            "Min Threat",
+            "Max Threat",
+            "Faction",
+            "SpaceRandomEncounter",
+            "SpaceCargoShip"
+        ]
         self.sg_tree.column("#0", width=350, stretch=False)
         self.sg_tree.heading("#0", text="SpawnGroup")
         for a_col in self.sg_tree["columns"]:
@@ -287,19 +325,58 @@ class RAIMapper:
 
         self.threat_select_frame = ttk.Frame(self.threat_tab)
         self.threat_select_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
-        self.threat_select_frame.grid_columnconfigure(3, weight=1)
+        self.threat_select_frame.grid_columnconfigure(4, weight=1)
         self.threat_select_frame.grid_rowconfigure(98, weight=1)
 
-        self.th_l_min_threat = ttk.Label(self.threat_select_frame, text="Player threat")
-        self.th_l_min_threat.grid(row=0, column=0, padx=10, pady=3, sticky='ew')
         self.th_e_min_threat = ttk.Entry(
             self.threat_select_frame,
             font=("Calibri", 12),
             textvariable=self.player_threat_value,
             validate='key',
-            validatecommand=(self.chk_thr, '%P')
+            validatecommand=(self.chk_thr, '%P'),
+            width=10
         )
-        self.th_e_min_threat.grid(row=0, column=1, padx=10, pady=3, sticky='ew')
+        self.th_e_min_threat.grid(row=0, column=0, columnspan=2, padx=10, pady=3, sticky='w')
+        self.th_l_min_threat = ttk.Label(self.threat_select_frame, text="Player threat")
+        self.th_l_min_threat.grid(row=0, column=2, padx=3, pady=3, sticky='w')
+
+        self.th_sep_left_sep1 = ttk.Separator(self.threat_select_frame)
+        self.th_sep_left_sep1.grid(row=2, column=0, columnspan=3, padx=20, pady=7, sticky='ew')
+
+        self.th_ch_inc_notrig = ttk.Checkbutton(self.threat_select_frame, variable=self.include_non_triggeredonly)
+        self.th_ch_inc_notrig.grid(row=3, column=0, padx=10, pady=3, sticky='ew')
+        self.th_l_inc_notrig = ttk.Label(self.threat_select_frame, text="Include Spawned Encounters")
+        self.th_l_inc_notrig.grid(row=3, column=1, columnspan=2, padx=10, pady=3, sticky='ew')
+
+        self.th_ch_inc_trig = ttk.Checkbutton(self.threat_select_frame, variable=self.include_triggeredonly)
+        self.th_ch_inc_trig.grid(row=4, column=0, padx=10, pady=3, sticky='ew')
+        self.th_l_inc_trig = ttk.Label(self.threat_select_frame, text="Include Triggered-Only Encounters")
+        self.th_l_inc_trig.grid(row=4, column=1, columnspan=2, padx=10, pady=3, sticky='ew')
+
+        self.th_ch_inc_scs = ttk.Checkbutton(self.threat_select_frame, variable=self.include_acs)
+        self.th_ch_inc_scs.grid(row=0, column=3, padx=10, pady=3, sticky='ew')
+        self.th_l_inc_scs = ttk.Label(self.threat_select_frame, text="Include AtmosphericCargoShips")
+        self.th_l_inc_scs.grid(row=0, column=4, padx=10, pady=3, sticky='ew')
+
+        self.th_ch_inc_scs = ttk.Checkbutton(self.threat_select_frame, variable=self.include_lcs)
+        self.th_ch_inc_scs.grid(row=1, column=3, padx=10, pady=3, sticky='ew')
+        self.th_l_inc_scs = ttk.Label(self.threat_select_frame, text="Include LunarCargoShips")
+        self.th_l_inc_scs.grid(row=1, column=4, padx=10, pady=3, sticky='ew')
+
+        self.th_ch_inc_scs = ttk.Checkbutton(self.threat_select_frame, variable=self.include_pi)
+        self.th_ch_inc_scs.grid(row=2, column=3, padx=10, pady=3, sticky='ew')
+        self.th_l_inc_scs = ttk.Label(self.threat_select_frame, text="Include PlanetaryInstallation")
+        self.th_l_inc_scs.grid(row=2, column=4, padx=10, pady=3, sticky='ew')
+
+        self.th_ch_inc_scs = ttk.Checkbutton(self.threat_select_frame, variable=self.include_scs)
+        self.th_ch_inc_scs.grid(row=3, column=3, padx=10, pady=3, sticky='ew')
+        self.th_l_inc_scs = ttk.Label(self.threat_select_frame, text="Include SpaceCargoShips")
+        self.th_l_inc_scs.grid(row=3, column=4, padx=10, pady=3, sticky='ew')
+
+        self.th_ch_inc_sre = ttk.Checkbutton(self.threat_select_frame, variable=self.include_sre)
+        self.th_ch_inc_sre.grid(row=4, column=3, padx=10, pady=3, sticky='ew')
+        self.th_l_inc_sre = ttk.Label(self.threat_select_frame, text="Include SpaceRandomEncounters")
+        self.th_l_inc_sre.grid(row=4, column=4, padx=10, pady=3, sticky='ew')
 
         self.th_b_get_sg = tk.Button(
             self.threat_select_frame,
@@ -309,27 +386,13 @@ class RAIMapper:
             foreground="#C3C3C3",
             font=('Arial', 16, 'bold'),
             padx=10,
-            command=self.get_threat_sgs
+            command=self.get_threat_sgs,
+            anchor=tk.CENTER
         )
-        self.th_b_get_sg.grid(row=2, column=0, padx=10, pady=3, sticky='ew', rowspan=2, columnspan=2)
+        self.th_b_get_sg.grid(row=10, column=0, padx=10, pady=[10, 3], sticky='ew', columnspan=3)
 
-        self.th_l_inc_notrig = ttk.Label(self.threat_select_frame, text="Include Spawned Encounters")
-        self.th_l_inc_notrig.grid(row=0, column=2, padx=10, pady=3, sticky='ew')
-        self.th_ch_inc_notrig = ttk.Checkbutton(self.threat_select_frame, variable=self.include_non_triggeredonly)
-        self.th_ch_inc_notrig.grid(row=0, column=3, padx=10, pady=3, sticky='ew')
-        self.th_l_inc_trig = ttk.Label(self.threat_select_frame, text="Include Triggered-Only Encounters")
-        self.th_l_inc_trig.grid(row=1, column=2, padx=10, pady=3, sticky='ew')
-        self.th_ch_inc_trig = ttk.Checkbutton(self.threat_select_frame, variable=self.include_triggeredonly)
-        self.th_ch_inc_trig.grid(row=1, column=3, padx=10, pady=3, sticky='ew')
-
-        self.th_l_inc_sre = ttk.Label(self.threat_select_frame, text="Include SpaceRandomEncounters")
-        self.th_l_inc_sre.grid(row=2, column=2, padx=10, pady=3, sticky='ew')
-        self.th_ch_inc_sre = ttk.Checkbutton(self.threat_select_frame, variable=self.include_sre)
-        self.th_ch_inc_sre.grid(row=2, column=3, padx=10, pady=3, sticky='ew')
-        self.th_l_inc_scs = ttk.Label(self.threat_select_frame, text="Include SpaceCargoShips")
-        self.th_l_inc_scs.grid(row=3, column=2, padx=10, pady=3, sticky='ew')
-        self.th_ch_inc_scs = ttk.Checkbutton(self.threat_select_frame, variable=self.include_scs)
-        self.th_ch_inc_scs.grid(row=3, column=3, padx=10, pady=3, sticky='ew')
+        self.th_sep_bottom = ttk.Separator(self.threat_select_frame)
+        self.th_sep_bottom.grid(row=99, column=0, columnspan=5, padx=20, pady=7, sticky='ew')
 
         self.threat_output_frame = ttk.Frame(self.threat_tab)
         self.threat_output_frame.grid(row=1, column=0, padx=5, pady=5, sticky='nsew')
@@ -337,7 +400,14 @@ class RAIMapper:
         self.threat_output_frame.grid_rowconfigure(0, weight=1)
 
         self.threat_sg_tree = ttk.Treeview(self.threat_output_frame)
-        self.threat_sg_tree["columns"] = ["Triggered", "Faction", "SpaceRandomEncounter", "SpaceCargoShip"]
+        self.threat_sg_tree["columns"] = [
+            "Triggered",
+            "Min Threat",
+            "Max Threat",
+            "Faction",
+            "SpaceRandomEncounter",
+            "SpaceCargoShip"
+        ]
         self.threat_sg_tree.column("#0", width=350, stretch=False)
         self.threat_sg_tree.heading("#0", text="SpawnGroup")
         for a_col in self.threat_sg_tree["columns"]:
@@ -361,7 +431,7 @@ class RAIMapper:
         self.tabs.grid(row=0, column=2, rowspan=99, padx=5, pady=5, sticky='nsew')
 
         self.f_main.grid_columnconfigure(2, weight=1)
-        self.f_main.grid_rowconfigure(98, weight=1)
+        self.f_main.grid_rowconfigure(97, weight=1)
 
     def import_from_sbc(self):
         self.parent_file_path = filedialog.askdirectory()
@@ -500,7 +570,14 @@ class RAIMapper:
 
     def populate_spawngroups(self):
         self.sg_tree = ttk.Treeview(self.sg_tab)
-        self.sg_tree["columns"] = ["Triggered", "Faction", "SpaceRandomEncounter", "SpaceCargoShip"]
+        self.sg_tree["columns"] = [
+            "Triggered",
+            "Min Threat",
+            "Max Threat",
+            "Faction",
+            "SpaceRandomEncounter",
+            "SpaceCargoShip"
+        ]
         self.sg_tree.column("#0", width=350, stretch=False)
         self.sg_tree.heading("#0", text="SpawnGroup", anchor=tk.W)
         for a_col in self.sg_tree["columns"]:
@@ -521,7 +598,8 @@ class RAIMapper:
                 9999,
                 "",
                 text=key,
-                values=(td["TriggeredOnly"], td["FactionOwner"], td["SpaceCargoShip"], td["SpaceRandomEncounter"])
+                values=(td["TriggeredOnly"], td['ThreatScoreMinimum'], td['ThreatScoreMaximum'],
+                        td["FactionOwner"], td["SpaceCargoShip"], td["SpaceRandomEncounter"])
             )
             for a_key, a_value in td.items():
                 if a_key == "Prefabs":
@@ -604,13 +682,25 @@ class RAIMapper:
             self.open_children(child)
 
     def get_threat_sgs(self):
-        include_sre = True
-        if self.include_sre.get() == 0:
-            include_sre = False
+        include_acs = True
+        if self.include_acs.get() == 0:
+            include_acs = False
+
+        include_lcs = True
+        if self.include_lcs.get() == 0:
+            include_lcs = False
+
+        include_pi = True
+        if self.include_pi.get() == 0:
+            include_pi = False
 
         include_scs = True
         if self.include_scs.get() == 0:
             include_scs = False
+
+        include_sre = True
+        if self.include_sre.get() == 0:
+            include_sre = False
 
         include_non_triggeredonly = True
         if self.include_non_triggeredonly.get() == 0:
@@ -621,7 +711,14 @@ class RAIMapper:
             include_triggeredonly = False
 
         self.threat_sg_tree = ttk.Treeview(self.threat_output_frame)
-        self.threat_sg_tree["columns"] = ["Triggered", "Min Threat", "Max Threat", "Faction", "SpaceRandomEncounter", "SpaceCargoShip"]
+        self.threat_sg_tree["columns"] = [
+            "Triggered",
+            "Min Threat",
+            "Max Threat",
+            "Faction",
+            "SpaceRandomEncounter",
+            "SpaceCargoShip"
+        ]
         self.threat_sg_tree.column("#0", width=350, stretch=False)
         self.threat_sg_tree.heading("#0", text="SpawnGroup", anchor=tk.W)
         for a_col in self.threat_sg_tree["columns"]:
@@ -642,9 +739,16 @@ class RAIMapper:
                 include_this = True
             if include_non_triggeredonly and td['TriggeredOnly'] == "false":
                 include_this = True
-            if include_sre and td['SpaceRandomEncounter'] == "true":
+
+            if include_acs and td['AtmosphericCargoShip'] == "true":
+                include_this = True
+            if include_lcs and td['LunarCargoShip'] == "true":
+                include_this = True
+            if include_pi and td['PlanetaryInstallation'] == "true":
                 include_this = True
             if include_scs and td['SpaceCargoShip'] == "true":
+                include_this = True
+            if include_sre and td['SpaceRandomEncounter'] == "true":
                 include_this = True
 
             if include_this:
