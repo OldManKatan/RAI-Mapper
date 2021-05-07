@@ -26,6 +26,8 @@ class RAIMapper:
 
         self.player_threat_value = tk.IntVar()
         self.player_threat_value.set(-1)
+        self.threat_faction_filter = tk.StringVar()
+        self.threat_faction_filter.set("")
         self.include_non_triggeredonly = tk.IntVar()
         self.include_non_triggeredonly.set(0)
         self.include_triggeredonly = tk.IntVar()
@@ -328,7 +330,7 @@ class RAIMapper:
         self.threat_select_frame.grid_columnconfigure(4, weight=1)
         self.threat_select_frame.grid_rowconfigure(98, weight=1)
 
-        self.th_e_min_threat = ttk.Entry(
+        self.th_e_player_threat = ttk.Entry(
             self.threat_select_frame,
             font=("Calibri", 12),
             textvariable=self.player_threat_value,
@@ -336,9 +338,20 @@ class RAIMapper:
             validatecommand=(self.chk_thr, '%P'),
             width=10
         )
-        self.th_e_min_threat.grid(row=0, column=0, columnspan=2, padx=10, pady=3, sticky='w')
-        self.th_l_min_threat = ttk.Label(self.threat_select_frame, text="Player threat")
-        self.th_l_min_threat.grid(row=0, column=2, padx=3, pady=3, sticky='w')
+        self.th_e_player_threat.grid(row=0, column=0, columnspan=2, padx=10, pady=3, sticky='w')
+        self.th_l_player_threat = ttk.Label(self.threat_select_frame, text="Player Threat")
+        self.th_l_player_threat.grid(row=0, column=2, padx=3, pady=3, sticky='w')
+
+        self.th_e_faction_filter = ttk.Entry(
+            self.threat_select_frame,
+            font=("Calibri", 12),
+            textvariable=self.threat_faction_filter,
+            validate='key',
+            width=10
+        )
+        self.th_e_faction_filter.grid(row=1, column=0, columnspan=2, padx=10, pady=3, sticky='w')
+        self.th_l_faction_filter = ttk.Label(self.threat_select_frame, text="Match Faction")
+        self.th_l_faction_filter.grid(row=1, column=2, padx=3, pady=3, sticky='w')
 
         self.th_sep_left_sep1 = ttk.Separator(self.threat_select_frame)
         self.th_sep_left_sep1.grid(row=2, column=0, columnspan=3, padx=20, pady=7, sticky='ew')
@@ -682,6 +695,8 @@ class RAIMapper:
             self.open_children(child)
 
     def get_threat_sgs(self):
+        match_faction = self.threat_faction_filter.get()
+
         include_acs = True
         if self.include_acs.get() == 0:
             include_acs = False
@@ -760,6 +775,10 @@ class RAIMapper:
                         include_this = False
                     if tsmax != -1 and tsmax < player_threat:
                         include_this = False
+
+            if include_this and len(match_faction) > 0:
+                if td['FactionOwner'].find(match_faction) == -1:
+                    include_this = False
 
             if include_this:
                 last_iid = self.threat_sg_tree.insert(
