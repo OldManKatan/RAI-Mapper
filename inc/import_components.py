@@ -50,8 +50,10 @@ def import_components(search_dir, debug=False):
     # Analyze each file, one at a time, and extract spawngroup information
     # =======================================================================================
 
-    match_type = re.compile(
+    match_rai_type = re.compile(
         r'\[RivalAI (Action|Autopilot|Behavior|Chat|Command|Condition|Spawn|Target|Trigger|TriggerGroup|Waypoint)\]')
+    match_mes_type = re.compile(
+        r'\[MES (Dereliction)\]')
 
     match_action_data = re.compile(r'\[Actions:(\S+)\]')
     match_pri_autopilot_data = re.compile(r'\[AutopilotData:(\S+)\]')
@@ -86,9 +88,6 @@ def import_components(search_dir, debug=False):
     pri_key = 0
 
     for each_file in sbc_paths:
-        # print(f"Checking file: {each_file}")
-        # time.sleep(0.5)
-
         files_checked += 1
 
         try:
@@ -106,7 +105,22 @@ def import_components(search_dir, debug=False):
         just_comps = ET.ElementTree(root).iter('EntityComponent')
 
         for this_comp in just_comps:
+            comp_type = None
+            iter_tags = ET.ElementTree(this_comp).iter()
+            for a_thing in iter_tags:
+                if a_thing.tag == 'Description':
+                    if a_thing.text.find('[RivalAI ') != -1:
+                        comp_type = 'rai'
+                    elif a_thing.text.find('[MES ') != -1 or a_thing.text.find('[Modular Encounters ') != -1:
+                        comp_type = 'mes'
+                elif a_thing.tag == 'SubtypeId':
+                    if a_thing.text.startswith('RivalAI-Datapad'):
+                        comp_type = 'rai'
+
             comps_checked += 1
+
+            if not comp_type:
+                continue
 
             this_data = {
                 'key': 0,
@@ -115,7 +129,8 @@ def import_components(search_dir, debug=False):
                 'desc': '',
                 'file': each_file.replace('\\', '/').split('/')[-1],
                 'calls': [],
-                'noexist': []
+                'noexist': [],
+                'comp_type': comp_type
             }
 
             iter_tags = ET.ElementTree(this_comp).iter()
@@ -125,11 +140,20 @@ def import_components(search_dir, debug=False):
                 elif a_thing.tag == 'Description':
                     this_data['desc'] = a_thing.text
 
-            find_type = match_type.findall(this_data['desc'])
+            has_type = None
+            find_type = match_rai_type.findall(this_data['desc'])
             if find_type:
+                has_type = find_type[0]
+            find_type = match_mes_type.findall(this_data['desc'])
+            if find_type:
+                has_type = find_type[0]
+            if this_data['name'].startswith('RivalAI-Datapad'):
+                has_type = 'Datapad'
+
+            if has_type:
                 if this_data['name'] not in name_to_key:
                     comps_found += 1
-                    this_data['type'] = find_type[0]
+                    this_data['type'] = has_type
                     this_data['key'] = pri_key
                     pri_key += 1
 
