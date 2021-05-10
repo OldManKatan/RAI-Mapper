@@ -9,3 +9,5 @@ rai_mapper.spec
 inc/__pycache__/all_sg_keys.cpython-36.pyc
 inc/__pycache__/import_components.cpython-36.pyc
 inc/__pycache__/import_spawngroups.cpython-36.pyc
+export_components.json
+export_spawngroups.json

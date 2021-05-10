@@ -84,6 +84,7 @@ def import_spawngroups(search_dir, debug=False):
                 'Frequency': '',
                 'FactionOwner': 'none',
                 'Prefabs': [],
+                'desc': ''
             }
 
             prefab_index = -1
@@ -100,6 +101,8 @@ def import_spawngroups(search_dir, debug=False):
                     this_data['SubtypeId'] = a_thing.text
                 elif a_thing.tag == 'IsPirate':
                     this_data['IsPirate'] = a_thing.text
+                elif a_thing.tag == 'Description':
+                    this_data['desc'] = a_thing.text
                 elif a_thing.tag == 'Frequency':
                     this_data['Frequency'] = a_thing.text
                 elif a_thing.tag == 'Prefab':
@@ -154,6 +157,11 @@ def import_spawngroups(search_dir, debug=False):
             all_sg[each_sg]['TriggeredOnly'] = 'true'
         else:
             all_sg[each_sg]['TriggeredOnly'] = 'false'
+
+        if all_sg[each_sg]['desc'].find('[Modular Encounters Territory]') != -1:
+            all_sg[each_sg]['IsTerritory'] = 'true'
+        else:
+            all_sg[each_sg]['IsTerritory'] = 'false'
 
     if debug:
         pprint(all_sg,  width=160)
