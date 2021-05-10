@@ -84,6 +84,7 @@ def import_spawngroups(search_dir, debug=False):
                 'Frequency': '',
                 'FactionOwner': 'none',
                 'Prefabs': [],
+                'desc': ''
             }
 
             prefab_index = -1
@@ -104,14 +105,6 @@ def import_spawngroups(search_dir, debug=False):
                     this_data['Frequency'] = a_thing.text
                 elif a_thing.tag == 'Prefab':
                     current_prefab = a_thing.attrib['SubtypeId']
-                    # this_data['Prefabs'][current_prefab] = {
-                    #     'Prefab': current_prefab,
-                    #     'X': '',
-                    #     'Y': '',
-                    #     'Z': '',
-                    #     'Speed': '',
-                    #     'Behaviour': ''
-                    # }
                     prefab_index = len(this_data['Prefabs'])
                     this_data['Prefabs'].append({
                         'Prefab': current_prefab,
@@ -133,6 +126,7 @@ def import_spawngroups(search_dir, debug=False):
                 elif a_thing.tag == 'Speed':
                     this_data['Prefabs'][prefab_index]['Speed'] = a_thing.text
                 elif a_thing.tag == 'Description':
+                    this_data['desc'] = a_thing.text
                     find_mes_tags = re.compile(r'\[(.*):(.*)]').findall(a_thing.text)
                     for found_tag in find_mes_tags:
                         mes_tag, mes_value = found_tag
@@ -145,7 +139,7 @@ def import_spawngroups(search_dir, debug=False):
     for each_sg in all_sg:
         if len(each_sg) == 0:
             continue
-        triggered_only = 'false'
+
         if (all_sg[each_sg]['SpaceCargoShip'] == 'false' and
                 all_sg[each_sg]['SpaceRandomEncounter'] == 'false' and
                 all_sg[each_sg]['LunarCargoShip'] == 'false' and
@@ -154,6 +148,11 @@ def import_spawngroups(search_dir, debug=False):
             all_sg[each_sg]['TriggeredOnly'] = 'true'
         else:
             all_sg[each_sg]['TriggeredOnly'] = 'false'
+
+        if all_sg[each_sg]['desc'].find('[Modular Encounters Territory]') != -1:
+            all_sg[each_sg]['IsTerritory'] = 'true'
+        else:
+            all_sg[each_sg]['IsTerritory'] = 'false'
 
     if debug:
         pprint(all_sg,  width=160)

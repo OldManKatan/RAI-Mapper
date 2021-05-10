@@ -1,3 +1,4 @@
+import re
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
@@ -24,28 +25,44 @@ class RAIMapper:
         self.spawngroup_dict = {}
         self.component_dict = {}
 
-        self.player_threat_value = tk.IntVar()
-        self.player_threat_value.set(-1)
-        self.include_non_triggeredonly = tk.IntVar()
-        self.include_non_triggeredonly.set(0)
-        self.include_triggeredonly = tk.IntVar()
-        self.include_triggeredonly.set(1)
+        self.sg_player_threat_value = tk.IntVar()
+        self.sg_player_threat_value.set(-1)
+        self.sg_threat_faction_filter = tk.StringVar()
+        self.sg_threat_faction_filter.set("")
+        self.sg_include_non_triggeredonly = tk.IntVar()
+        self.sg_include_non_triggeredonly.set(0)
+        self.sg_include_triggeredonly = tk.IntVar()
+        self.sg_include_triggeredonly.set(1)
 
-        self.include_acs = tk.IntVar()
-        self.include_acs.set(1)
-        self.include_lcs = tk.IntVar()
-        self.include_lcs.set(1)
-        self.include_pi = tk.IntVar()
-        self.include_pi.set(1)
-        self.include_sre = tk.IntVar()
-        self.include_sre.set(1)
-        self.include_scs = tk.IntVar()
-        self.include_scs.set(1)
+        self.sg_include_acs = tk.IntVar()
+        self.sg_include_acs.set(1)
+        self.sg_include_lcs = tk.IntVar()
+        self.sg_include_lcs.set(1)
+        self.sg_include_pi = tk.IntVar()
+        self.sg_include_pi.set(1)
+        self.sg_include_sre = tk.IntVar()
+        self.sg_include_sre.set(1)
+        self.sg_include_scs = tk.IntVar()
+        self.sg_include_scs.set(1)
+
+        self.sg_include_territory = tk.IntVar()
+        self.sg_include_territory.set(0)
+
+        self.ec_match_in_name = tk.StringVar()
+        self.ec_match_in_name.set("")
+        self.ec_include_mes_comp = tk.IntVar()
+        self.ec_include_mes_comp.set(0)
+        self.ec_include_rai_comp = tk.IntVar()
+        self.ec_include_rai_comp.set(1)
+        self.ec_include_behavior = tk.IntVar()
+        self.ec_include_behavior.set(1)
+        self.ec_include_dereliction = tk.IntVar()
+        self.ec_include_dereliction.set(0)
 
         self.debug = False
 
         self.style = ttk.Style()
-        print(self.style.theme_names())
+        # print(self.style.theme_names())
 
         self.style.theme_create(
             "raim_theme", parent="", settings={
@@ -226,35 +243,15 @@ class RAIMapper:
 
         self.tabs = ttk.Notebook(self.f_main)
 
+        # #############################################
+        # SUMMARY
+        # #############################################
+
         self.summ_tab = ttk.Frame(self.tabs)
         self.summ_tab.grid_columnconfigure(0, weight=1)
         self.summ_tab.grid_rowconfigure(0, weight=1)
 
         self.tabs.add(self.summ_tab, text='Summary')
-
-        self.det_tab = ttk.Frame(self.tabs)
-        self.det_tab.grid_columnconfigure(0, weight=1)
-        self.det_tab.grid_rowconfigure(0, weight=1)
-
-        self.tabs.add(self.det_tab, text='Details')
-
-        self.sg_tab = ttk.Frame(self.tabs)
-        self.sg_tab.grid_columnconfigure(0, weight=1)
-        self.sg_tab.grid_rowconfigure(0, weight=1)
-
-        self.tabs.add(self.sg_tab, text='Spawn Groups')
-
-        self.comp_tab = ttk.Frame(self.tabs)
-        self.comp_tab.grid_columnconfigure(0, weight=1)
-        self.comp_tab.grid_rowconfigure(0, weight=1)
-
-        self.tabs.add(self.comp_tab, text='RAI Components')
-
-        self.threat_tab = ttk.Frame(self.tabs)
-        self.threat_tab.grid_columnconfigure(0, weight=1)
-        self.threat_tab.grid_rowconfigure(1, weight=1)
-
-        self.tabs.add(self.threat_tab, text='SG Filter')
 
         self.summ_frame = ttk.Frame(self.summ_tab)
         self.summ_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
@@ -272,6 +269,16 @@ class RAIMapper:
         )
         self.l_summ_nodata2.grid(row=1, column=0, padx=5, pady=5, sticky='nw')
 
+        # #############################################
+        # DETAILS
+        # #############################################
+
+        self.det_tab = ttk.Frame(self.tabs)
+        self.det_tab.grid_columnconfigure(0, weight=1)
+        self.det_tab.grid_rowconfigure(0, weight=1)
+
+        self.tabs.add(self.det_tab, text='Details')
+
         self.det_frame = ttk.Frame(self.det_tab)
         self.det_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
         self.det_frame.grid_columnconfigure(1, weight=1)
@@ -284,144 +291,260 @@ class RAIMapper:
         )
         self.l_det_nodata.grid(row=0, column=0, padx=5, pady=5, sticky='nw')
 
-        self.sg_tree = ttk.Treeview(self.sg_tab)
-        self.sg_tree["columns"] = [
-            "Triggered",
-            "Min Threat",
-            "Max Threat",
-            "Faction",
-            "SpaceRandomEncounter",
-            "SpaceCargoShip"
-        ]
-        self.sg_tree.column("#0", width=350, stretch=False)
-        self.sg_tree.heading("#0", text="SpawnGroup")
-        for a_col in self.sg_tree["columns"]:
-            self.sg_tree.column(a_col, width=50)
-            self.sg_tree.heading(a_col, text=a_col)
-        self.sg_tree.insert("", 1, "", text="No data loaded...", values=(""))
+        # #############################################
+        # SPAWNGROUPS
+        # #############################################
 
-        self.sg_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+        self.sg_tab = ttk.Frame(self.tabs)
+        self.sg_tab.grid_columnconfigure(0, weight=1)
+        self.sg_tab.grid_rowconfigure(1, weight=1)
 
-        self.sg_tree_yscroll = ttk.Scrollbar(
-            self.sg_tab, orient='vertical', command=self.sg_tree.yview)
-        self.sg_tree.configure(yscrollcommand=self.sg_tree_yscroll.set)
-        self.sg_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
+        self.tabs.add(self.sg_tab, text='SpawnGroups')
 
-        self.comp_tree = ttk.Treeview(self.comp_tab)
-        self.comp_tree["columns"] = "type"
-        self.comp_tree.column("#0", width=500, stretch=False)
-        self.comp_tree.column("type", width=100)
-        self.comp_tree.heading("#0", text="SubTypeId")
-        self.comp_tree.heading("type", text="Type")
-        self.comp_tree.insert("", 1, "", text="No data loaded...", values=(""))
-        self.comp_tree.bind('<<TreeviewOpen>>', self.handle_open_event)
+        self.sg_select_frame = ttk.Frame(self.sg_tab)
+        self.sg_select_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+        self.sg_select_frame.grid_columnconfigure(98, weight=1)
+        self.sg_select_frame.grid_rowconfigure(98, weight=1)
 
-        self.comp_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
-
-        self.comp_tree_yscroll = ttk.Scrollbar(
-            self.comp_tab, orient='vertical', command=self.comp_tree.yview)
-        self.comp_tree.configure(yscrollcommand=self.comp_tree_yscroll.set)
-        self.comp_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
-
-        self.threat_select_frame = ttk.Frame(self.threat_tab)
-        self.threat_select_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
-        self.threat_select_frame.grid_columnconfigure(4, weight=1)
-        self.threat_select_frame.grid_rowconfigure(98, weight=1)
-
-        self.th_e_min_threat = ttk.Entry(
-            self.threat_select_frame,
+        self.sg_e_player_threat = ttk.Entry(
+            self.sg_select_frame,
             font=("Calibri", 12),
-            textvariable=self.player_threat_value,
+            textvariable=self.sg_player_threat_value,
             validate='key',
             validatecommand=(self.chk_thr, '%P'),
             width=10
         )
-        self.th_e_min_threat.grid(row=0, column=0, columnspan=2, padx=10, pady=3, sticky='w')
-        self.th_l_min_threat = ttk.Label(self.threat_select_frame, text="Player threat")
-        self.th_l_min_threat.grid(row=0, column=2, padx=3, pady=3, sticky='w')
+        self.sg_e_player_threat.grid(row=0, column=0, columnspan=2, padx=10, pady=3, sticky='w')
+        self.sg_l_player_threat = ttk.Label(self.sg_select_frame, text="Player Threat")
+        self.sg_l_player_threat.grid(row=0, column=2, padx=3, pady=3, sticky='w')
 
-        self.th_sep_left_sep1 = ttk.Separator(self.threat_select_frame)
-        self.th_sep_left_sep1.grid(row=2, column=0, columnspan=3, padx=20, pady=7, sticky='ew')
+        self.sg_e_faction_filter = ttk.Entry(
+            self.sg_select_frame,
+            font=("Calibri", 12),
+            textvariable=self.sg_threat_faction_filter,
+            validate='key',
+            width=10
+        )
+        self.sg_e_faction_filter.grid(row=1, column=0, columnspan=2, padx=10, pady=3, sticky='w')
+        self.sg_l_faction_filter = ttk.Label(self.sg_select_frame, text="Match Faction")
+        self.sg_l_faction_filter.grid(row=1, column=2, padx=3, pady=3, sticky='w')
 
-        self.th_ch_inc_notrig = ttk.Checkbutton(self.threat_select_frame, variable=self.include_non_triggeredonly)
-        self.th_ch_inc_notrig.grid(row=3, column=0, padx=10, pady=3, sticky='ew')
-        self.th_l_inc_notrig = ttk.Label(self.threat_select_frame, text="Include Spawned Encounters")
-        self.th_l_inc_notrig.grid(row=3, column=1, columnspan=2, padx=10, pady=3, sticky='ew')
+        self.sg_sep_left_sep1 = ttk.Separator(self.sg_select_frame)
+        self.sg_sep_left_sep1.grid(row=2, column=0, columnspan=3, padx=20, pady=7, sticky='ew')
 
-        self.th_ch_inc_trig = ttk.Checkbutton(self.threat_select_frame, variable=self.include_triggeredonly)
-        self.th_ch_inc_trig.grid(row=4, column=0, padx=10, pady=3, sticky='ew')
-        self.th_l_inc_trig = ttk.Label(self.threat_select_frame, text="Include Triggered-Only Encounters")
-        self.th_l_inc_trig.grid(row=4, column=1, columnspan=2, padx=10, pady=3, sticky='ew')
+        self.sg_ch_inc_scs = ttk.Checkbutton(self.sg_select_frame, variable=self.sg_include_acs)
+        self.sg_ch_inc_scs.grid(row=0, column=3, padx=10, pady=3, sticky='ew')
+        self.sg_l_inc_scs = ttk.Label(self.sg_select_frame, text="Include AtmosphericCargoShips")
+        self.sg_l_inc_scs.grid(row=0, column=4, padx=10, pady=3, sticky='ew')
 
-        self.th_ch_inc_scs = ttk.Checkbutton(self.threat_select_frame, variable=self.include_acs)
-        self.th_ch_inc_scs.grid(row=0, column=3, padx=10, pady=3, sticky='ew')
-        self.th_l_inc_scs = ttk.Label(self.threat_select_frame, text="Include AtmosphericCargoShips")
-        self.th_l_inc_scs.grid(row=0, column=4, padx=10, pady=3, sticky='ew')
+        self.sg_ch_inc_scs = ttk.Checkbutton(self.sg_select_frame, variable=self.sg_include_lcs)
+        self.sg_ch_inc_scs.grid(row=1, column=3, padx=10, pady=3, sticky='ew')
+        self.sg_l_inc_scs = ttk.Label(self.sg_select_frame, text="Include LunarCargoShips")
+        self.sg_l_inc_scs.grid(row=1, column=4, padx=10, pady=3, sticky='ew')
 
-        self.th_ch_inc_scs = ttk.Checkbutton(self.threat_select_frame, variable=self.include_lcs)
-        self.th_ch_inc_scs.grid(row=1, column=3, padx=10, pady=3, sticky='ew')
-        self.th_l_inc_scs = ttk.Label(self.threat_select_frame, text="Include LunarCargoShips")
-        self.th_l_inc_scs.grid(row=1, column=4, padx=10, pady=3, sticky='ew')
+        self.sg_ch_inc_scs = ttk.Checkbutton(self.sg_select_frame, variable=self.sg_include_pi)
+        self.sg_ch_inc_scs.grid(row=2, column=3, padx=10, pady=3, sticky='ew')
+        self.sg_l_inc_scs = ttk.Label(self.sg_select_frame, text="Include PlanetaryInstallation")
+        self.sg_l_inc_scs.grid(row=2, column=4, padx=10, pady=3, sticky='ew')
 
-        self.th_ch_inc_scs = ttk.Checkbutton(self.threat_select_frame, variable=self.include_pi)
-        self.th_ch_inc_scs.grid(row=2, column=3, padx=10, pady=3, sticky='ew')
-        self.th_l_inc_scs = ttk.Label(self.threat_select_frame, text="Include PlanetaryInstallation")
-        self.th_l_inc_scs.grid(row=2, column=4, padx=10, pady=3, sticky='ew')
+        self.sg_ch_inc_scs = ttk.Checkbutton(self.sg_select_frame, variable=self.sg_include_scs)
+        self.sg_ch_inc_scs.grid(row=3, column=3, padx=10, pady=3, sticky='ew')
+        self.sg_l_inc_scs = ttk.Label(self.sg_select_frame, text="Include SpaceCargoShips")
+        self.sg_l_inc_scs.grid(row=3, column=4, padx=10, pady=3, sticky='ew')
 
-        self.th_ch_inc_scs = ttk.Checkbutton(self.threat_select_frame, variable=self.include_scs)
-        self.th_ch_inc_scs.grid(row=3, column=3, padx=10, pady=3, sticky='ew')
-        self.th_l_inc_scs = ttk.Label(self.threat_select_frame, text="Include SpaceCargoShips")
-        self.th_l_inc_scs.grid(row=3, column=4, padx=10, pady=3, sticky='ew')
+        self.sg_ch_inc_sre = ttk.Checkbutton(self.sg_select_frame, variable=self.sg_include_sre)
+        self.sg_ch_inc_sre.grid(row=4, column=3, padx=10, pady=3, sticky='ew')
+        self.sg_l_inc_sre = ttk.Label(self.sg_select_frame, text="Include SpaceRandomEncounters")
+        self.sg_l_inc_sre.grid(row=4, column=4, padx=10, pady=3, sticky='ew')
 
-        self.th_ch_inc_sre = ttk.Checkbutton(self.threat_select_frame, variable=self.include_sre)
-        self.th_ch_inc_sre.grid(row=4, column=3, padx=10, pady=3, sticky='ew')
-        self.th_l_inc_sre = ttk.Label(self.threat_select_frame, text="Include SpaceRandomEncounters")
-        self.th_l_inc_sre.grid(row=4, column=4, padx=10, pady=3, sticky='ew')
-
-        self.th_b_get_sg = tk.Button(
-            self.threat_select_frame,
-            text="Get SpawnGroups",
+        self.sg_b_get_sg = tk.Button(
+            self.sg_select_frame,
+            text="Filter SpawnGroups",
             relief="flat",
             background="#4260d6",
             foreground="#C3C3C3",
             font=('Arial', 16, 'bold'),
             padx=10,
-            command=self.get_threat_sgs,
+            command=self.populate_sgs,
             anchor=tk.CENTER
         )
-        self.th_b_get_sg.grid(row=10, column=0, padx=10, pady=[10, 3], sticky='ew', columnspan=3)
+        self.sg_b_get_sg.grid(row=10, column=0, padx=10, pady=[10, 3], sticky='ew', columnspan=3)
 
-        self.th_sep_bottom = ttk.Separator(self.threat_select_frame)
-        self.th_sep_bottom.grid(row=99, column=0, columnspan=5, padx=20, pady=7, sticky='ew')
+        self.sg_b_get_sg = tk.Button(
+            self.sg_select_frame,
+            text="Clear Filters",
+            relief="flat",
+            background="#4260d6",
+            foreground="#C3C3C3",
+            font=('Arial', 16, 'bold'),
+            padx=10,
+            command=self.clear_sg_filter,
+            anchor=tk.CENTER
+        )
+        self.sg_b_get_sg.grid(row=10, column=3, padx=10, pady=[10, 3], sticky='ew', columnspan=2)
 
-        self.threat_output_frame = ttk.Frame(self.threat_tab)
-        self.threat_output_frame.grid(row=1, column=0, padx=5, pady=5, sticky='nsew')
-        self.threat_output_frame.grid_columnconfigure(0, weight=1)
-        self.threat_output_frame.grid_rowconfigure(0, weight=1)
+        self.sg_ch_inc_notrig = ttk.Checkbutton(self.sg_select_frame, variable=self.sg_include_non_triggeredonly)
+        self.sg_ch_inc_notrig.grid(row=0, column=5, padx=10, pady=3, sticky='ew')
+        self.sg_l_inc_notrig = ttk.Label(self.sg_select_frame, text="Include Spawned Encounters")
+        self.sg_l_inc_notrig.grid(row=0, column=6, padx=10, pady=3, sticky='ew')
 
-        self.threat_sg_tree = ttk.Treeview(self.threat_output_frame)
-        self.threat_sg_tree["columns"] = [
-            "Triggered",
-            "Min Threat",
-            "Max Threat",
-            "Faction",
-            "SpaceRandomEncounter",
-            "SpaceCargoShip"
-        ]
-        self.threat_sg_tree.column("#0", width=350, stretch=False)
-        self.threat_sg_tree.heading("#0", text="SpawnGroup")
-        for a_col in self.threat_sg_tree["columns"]:
-            self.threat_sg_tree.column(a_col, width=50)
-            self.threat_sg_tree.heading(a_col, text=a_col)
-        self.threat_sg_tree.insert("", 1, "", text="No data loaded...", values=(""))
+        self.sg_ch_inc_trig = ttk.Checkbutton(self.sg_select_frame, variable=self.sg_include_triggeredonly)
+        self.sg_ch_inc_trig.grid(row=1, column=5, padx=10, pady=3, sticky='ew')
+        self.sg_l_inc_trig = ttk.Label(self.sg_select_frame, text="Include Triggered-Only Encounters")
+        self.sg_l_inc_trig.grid(row=1, column=6, padx=10, pady=3, sticky='ew')
 
-        self.threat_sg_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+        self.sg_sep_c3_1 = ttk.Separator(self.sg_select_frame)
+        self.sg_sep_c3_1.grid(row=2, column=5, columnspan=2, padx=20, pady=7, sticky='ew')
 
-        self.threat_sg_tree_yscroll = ttk.Scrollbar(
-            self.threat_output_frame, orient='vertical', command=self.threat_sg_tree.yview)
-        self.threat_sg_tree.configure(yscrollcommand=self.threat_sg_tree_yscroll.set)
+        self.sg_ch_inc_territory = ttk.Checkbutton(self.sg_select_frame, variable=self.sg_include_territory)
+        self.sg_ch_inc_territory.grid(row=3, column=5, padx=10, pady=3, sticky='ew')
+        self.sg_l_inc_territory = ttk.Label(self.sg_select_frame, text="Include Territories")
+        self.sg_l_inc_territory.grid(row=3, column=6, columnspan=2, padx=10, pady=3, sticky='ew')
 
-        self.threat_sg_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
+        self.sg_sep_bottom = ttk.Separator(self.sg_select_frame)
+        self.sg_sep_bottom.grid(row=99, column=0, columnspan=98, padx=20, pady=7, sticky='ew')
+
+        self.sg_output_frame = ttk.Frame(self.sg_tab)
+        self.sg_output_frame.grid(row=1, column=0, padx=5, pady=5, sticky='nsew')
+        self.sg_output_frame.grid_columnconfigure(0, weight=1)
+        self.sg_output_frame.grid_rowconfigure(0, weight=1)
+
+        self.sg_tree = ttk.Treeview(self.sg_output_frame)
+
+        self.populate_sgs()
+        self.sg_tree_yscroll = ttk.Scrollbar(
+            self.sg_output_frame, orient='vertical', command=self.sg_tree.yview)
+
+        # #############################################
+        # ENTITYCOMPONENTS
+        # #############################################
+
+        self.comp_tab = ttk.Frame(self.tabs)
+        self.comp_tab.grid_columnconfigure(0, weight=1)
+        self.comp_tab.grid_rowconfigure(1, weight=1)
+
+        self.tabs.add(self.comp_tab, text='EntityComponents')
+
+        self.ec_select_frame = ttk.Frame(self.comp_tab)
+        self.ec_select_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+        self.ec_select_frame.grid_columnconfigure(98, weight=1)
+        self.ec_select_frame.grid_rowconfigure(98, weight=1)
+
+        self.ec_e_comp_name = ttk.Entry(
+            self.ec_select_frame,
+            font=("Calibri", 12),
+            textvariable=self.ec_match_in_name,
+            validate='key',
+            width=10
+        )
+        self.ec_e_comp_name.grid(row=0, column=0, columnspan=2, padx=10, pady=3, sticky='w')
+        self.ec_l_comp_name = ttk.Label(self.ec_select_frame, text="Match in Name")
+        self.ec_l_comp_name.grid(row=0, column=2, padx=3, pady=3, sticky='w')
+
+        # self.ec_e_faction_filter = ttk.Entry(
+        #     self.ec_select_frame,
+        #     font=("Calibri", 12),
+        #     textvariable=self.sg_threat_faction_filter,
+        #     validate='key',
+        #     width=10
+        # )
+        # self.ec_e_faction_filter.grid(row=1, column=0, columnspan=2, padx=10, pady=3, sticky='w')
+        # self.ec_l_faction_filter = ttk.Label(self.ec_select_frame, text="Match Faction")
+        # self.ec_l_faction_filter.grid(row=1, column=2, padx=3, pady=3, sticky='w')
+        #
+        # self.ec_sep_left_sep1 = ttk.Separator(self.ec_select_frame)
+        # self.ec_sep_left_sep1.grid(row=2, column=0, columnspan=3, padx=20, pady=7, sticky='ew')
+
+        self.ec_ch_inc_scs = ttk.Checkbutton(self.ec_select_frame, variable=self.ec_include_rai_comp)
+        self.ec_ch_inc_scs.grid(row=0, column=3, padx=10, pady=3, sticky='ew')
+        self.ec_l_inc_scs = ttk.Label(self.ec_select_frame, text="Include RAI Components")
+        self.ec_l_inc_scs.grid(row=0, column=4, padx=10, pady=3, sticky='ew')
+
+        self.ec_ch_inc_scs = ttk.Checkbutton(self.ec_select_frame, variable=self.ec_include_mes_comp)
+        self.ec_ch_inc_scs.grid(row=1, column=3, padx=10, pady=3, sticky='ew')
+        self.ec_l_inc_scs = ttk.Label(self.ec_select_frame, text="Include MES Components")
+        self.ec_l_inc_scs.grid(row=1, column=4, padx=10, pady=3, sticky='ew')
+
+        # self.ec_ch_inc_scs = ttk.Checkbutton(self.ec_select_frame, variable=self.sg_include_pi)
+        # self.ec_ch_inc_scs.grid(row=2, column=3, padx=10, pady=3, sticky='ew')
+        # self.ec_l_inc_scs = ttk.Label(self.ec_select_frame, text="Include PlanetaryInstallation")
+        # self.ec_l_inc_scs.grid(row=2, column=4, padx=10, pady=3, sticky='ew')
+        #
+        # self.ec_ch_inc_scs = ttk.Checkbutton(self.ec_select_frame, variable=self.sg_include_scs)
+        # self.ec_ch_inc_scs.grid(row=3, column=3, padx=10, pady=3, sticky='ew')
+        # self.ec_l_inc_scs = ttk.Label(self.ec_select_frame, text="Include SpaceCargoShips")
+        # self.ec_l_inc_scs.grid(row=3, column=4, padx=10, pady=3, sticky='ew')
+        #
+        # self.ec_ch_inc_sre = ttk.Checkbutton(self.ec_select_frame, variable=self.sg_include_sre)
+        # self.ec_ch_inc_sre.grid(row=4, column=3, padx=10, pady=3, sticky='ew')
+        # self.ec_l_inc_sre = ttk.Label(self.ec_select_frame, text="Include SpaceRandomEncounters")
+        # self.ec_l_inc_sre.grid(row=4, column=4, padx=10, pady=3, sticky='ew')
+
+        self.ec_b_get_sg = tk.Button(
+            self.ec_select_frame,
+            text="Filter EntityComponents",
+            relief="flat",
+            background="#4260d6",
+            foreground="#C3C3C3",
+            font=('Arial', 16, 'bold'),
+            padx=10,
+            command=self.populate_ecs,
+            anchor=tk.CENTER
+        )
+        self.ec_b_get_sg.grid(row=10, column=0, padx=10, pady=[10, 3], sticky='ew', columnspan=3)
+
+        self.ec_b_get_sg = tk.Button(
+            self.ec_select_frame,
+            text="Clear Filters",
+            relief="flat",
+            background="#4260d6",
+            foreground="#C3C3C3",
+            font=('Arial', 16, 'bold'),
+            padx=10,
+            command=self.clear_ec_filter,
+            anchor=tk.CENTER
+        )
+        self.ec_b_get_sg.grid(row=10, column=3, padx=10, pady=[10, 3], sticky='ew', columnspan=2)
+
+        self.ec_ch_inc_behav = ttk.Checkbutton(self.ec_select_frame, variable=self.ec_include_behavior)
+        self.ec_ch_inc_behav.grid(row=0, column=5, padx=10, pady=3, sticky='ew')
+        self.ec_l_inc_behav = ttk.Label(self.ec_select_frame, text="Include Behavior")
+        self.ec_l_inc_behav.grid(row=0, column=6, padx=10, pady=3, sticky='ew')
+
+        self.ec_ch_inc_derel = ttk.Checkbutton(self.ec_select_frame, variable=self.ec_include_dereliction)
+        self.ec_ch_inc_derel.grid(row=1, column=5, padx=10, pady=3, sticky='ew')
+        self.ec_l_inc_derel = ttk.Label(self.ec_select_frame, text="Include Dereliction")
+        self.ec_l_inc_derel.grid(row=1, column=6, padx=10, pady=3, sticky='ew')
+        #
+        # self.ec_sep_c3_1 = ttk.Separator(self.ec_select_frame)
+        # self.ec_sep_c3_1.grid(row=2, column=5, columnspan=2, padx=20, pady=7, sticky='ew')
+        #
+        # self.ec_ch_inc_territory = ttk.Checkbutton(self.ec_select_frame, variable=self.sg_include_territory)
+        # self.ec_ch_inc_territory.grid(row=3, column=5, padx=10, pady=3, sticky='ew')
+        # self.ec_l_inc_territory = ttk.Label(self.ec_select_frame, text="Include Territories")
+        # self.ec_l_inc_territory.grid(row=3, column=6, columnspan=2, padx=10, pady=3, sticky='ew')
+        #
+        # self.ec_ch_inc_derelict = ttk.Checkbutton(self.ec_select_frame, variable=self.include_dereliction)
+        # self.ec_ch_inc_derelict.grid(row=4, column=5, padx=10, pady=3, sticky='ew')
+        # self.ec_l_inc_derelict = ttk.Label(self.ec_select_frame, text="Include Dereliction Profiles")
+        # self.ec_l_inc_derelict.grid(row=4, column=6, columnspan=2, padx=10, pady=3, sticky='ew')
+
+        self.ec_sep_bottom = ttk.Separator(self.ec_select_frame)
+        self.ec_sep_bottom.grid(row=99, column=0, columnspan=98, padx=20, pady=7, sticky='ew')
+
+        self.ec_output_frame = ttk.Frame(self.comp_tab)
+        self.ec_output_frame.grid(row=1, column=0, padx=5, pady=5, sticky='nsew')
+        self.ec_output_frame.grid_columnconfigure(0, weight=1)
+        self.ec_output_frame.grid_rowconfigure(0, weight=1)
+
+        self.comp_tree = ttk.Treeview(self.ec_output_frame)
+        self.comp_tree_yscroll = ttk.Scrollbar(
+            self.ec_output_frame, orient='vertical', command=self.comp_tree.yview)
+        self.populate_ecs()
+
+        # #############################################
+        # FRAME MAIN
+        # #############################################
 
         self.f_main.grid(row=0, column=0, padx=0, pady=0, sticky='nsew')
 
@@ -439,10 +562,23 @@ class RAIMapper:
         print(self.parent_file_path)
         returned_spawngroup_data = import_spawngroups(self.parent_file_path)
         self.spawngroup_dict = returned_spawngroup_data['data']
-        self.populate_spawngroups()
+        # self.populate_spawngroups()
+        self.populate_sgs()
+
         returned_component_data = import_components(self.parent_file_path)
         self.component_dict = returned_component_data['data']
-        self.populate_components()
+        self.populate_ecs()
+
+        returned_component_data['detail']['noexist_sgs'] = []
+        match_spawned_spawngroups = re.compile(r'\[SpawnGroups:(.*?)\]')
+        for a_key in self.component_dict:
+            if self.component_dict[a_key]["type"] == "Spawn":
+                find_sp_sg = match_spawned_spawngroups.findall(self.component_dict[a_key]["desc"])
+                for found_sg in find_sp_sg:
+                    if found_sg not in self.spawngroup_dict:
+                        returned_component_data['detail']['noexist_sgs'].append(
+                            [found_sg, f'Called by: {self.component_dict[a_key]["name"]}']
+                        )
 
         self.populate_summary(returned_spawngroup_data['summary'], returned_component_data['summary'])
         self.populate_details(returned_component_data['detail'])
@@ -530,6 +666,27 @@ class RAIMapper:
             row_counter += 1
 
         ttk.Label(
+            self.det_frame, text="Spawngroups in Spawn Components that do not exist:", style="Header.TLabel"
+        ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+        row_counter += 1
+
+        if comp_det_dict['noexist_sgs']:
+            for value in comp_det_dict['noexist_sgs']:
+                sg_name, spawn_comp_name = value
+                ttk.Label(
+                    self.det_frame, text=sg_name, anchor=tk.W
+                ).grid(row=row_counter, column=0, columnspan=1, padx=10, sticky='ew')
+                ttk.Label(
+                    self.det_frame, text=spawn_comp_name, anchor=tk.W
+                ).grid(row=row_counter, column=1, columnspan=1, padx=10, sticky='ew')
+                row_counter += 1
+        else:
+            ttk.Label(
+                self.det_frame, text="None", anchor=tk.W
+            ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+            row_counter += 1
+
+        ttk.Label(
             self.det_frame, text="Duplicated Components:", style="Header.TLabel"
         ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
         row_counter += 1
@@ -557,7 +714,7 @@ class RAIMapper:
         if comp_det_dict['file_errors']:
             for value in comp_det_dict['file_errors']:
                 ttk.Label(
-                    self.det_frame, text=value, anchor=tk.w
+                    self.det_frame, text=value, anchor=tk.W
                 ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
                 row_counter += 1
         else:
@@ -568,8 +725,42 @@ class RAIMapper:
 
         self.det_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
 
-    def populate_spawngroups(self):
-        self.sg_tree = ttk.Treeview(self.sg_tab)
+    def populate_sgs(self):
+        match_faction = self.sg_threat_faction_filter.get()
+
+        include_acs = True
+        if self.sg_include_acs.get() == 0:
+            include_acs = False
+
+        include_lcs = True
+        if self.sg_include_lcs.get() == 0:
+            include_lcs = False
+
+        include_pi = True
+        if self.sg_include_pi.get() == 0:
+            include_pi = False
+
+        include_scs = True
+        if self.sg_include_scs.get() == 0:
+            include_scs = False
+
+        include_sre = True
+        if self.sg_include_sre.get() == 0:
+            include_sre = False
+
+        include_non_triggeredonly = True
+        if self.sg_include_non_triggeredonly.get() == 0:
+            include_non_triggeredonly = False
+
+        include_triggeredonly = True
+        if self.sg_include_triggeredonly.get() == 0:
+            include_triggeredonly = False
+
+        include_territory = True
+        if self.sg_include_territory.get() == 0:
+            include_territory = False
+
+        self.sg_tree = ttk.Treeview(self.sg_output_frame)
         self.sg_tree["columns"] = [
             "Triggered",
             "Min Threat",
@@ -584,41 +775,98 @@ class RAIMapper:
             self.sg_tree.column(a_col, width=50)
             self.sg_tree.heading(a_col, text=a_col, anchor=tk.W)
 
-        ordered_sgs = []
-        for key in self.spawngroup_dict:
-            ordered_sgs.append(key)
-        ordered_sgs.sort()
+        if len(self.spawngroup_dict) > 0:
+            ordered_sgs = []
+            for key in self.spawngroup_dict:
+                ordered_sgs.append(key)
+            ordered_sgs.sort()
 
-        for key in ordered_sgs:
-            if self.debug:
-                print(f'adding key {key}')
-            td = self.spawngroup_dict[key]
-            last_iid = self.sg_tree.insert(
-                "",
-                9999,
-                "",
-                text=key,
-                values=(td["TriggeredOnly"], td['ThreatScoreMinimum'], td['ThreatScoreMaximum'],
-                        td["FactionOwner"], td["SpaceCargoShip"], td["SpaceRandomEncounter"])
-            )
-            for a_key, a_value in td.items():
-                if a_key == "Prefabs":
-                    prefab_iid = self.sg_tree.insert(last_iid, 9999, "", text=a_key)
-                    for a_dict in a_value:
-                        self.sg_tree.insert(prefab_iid, 9999, "",
-                                            text=a_dict["Prefab"],
-                                            values=(f'{a_dict["Behaviour"]}', ))
-                else:
-                    self.sg_tree.insert(last_iid, 1, "", text=a_key, values=(f"{a_value}", ))
+            for key in ordered_sgs:
+                if self.debug:
+                    print(f'Evaluating key {key}')
+                td = self.spawngroup_dict[key]
+                include_this = False
+                if include_triggeredonly and td['TriggeredOnly'] == "true":
+                    include_this = True
+                if include_non_triggeredonly and td['TriggeredOnly'] == "false":
+                    include_this = True
+
+                if include_acs and td['AtmosphericCargoShip'] == "true":
+                    include_this = True
+                if include_lcs and td['LunarCargoShip'] == "true":
+                    include_this = True
+                if include_pi and td['PlanetaryInstallation'] == "true":
+                    include_this = True
+                if include_scs and td['SpaceCargoShip'] == "true":
+                    include_this = True
+                if include_sre and td['SpaceRandomEncounter'] == "true":
+                    include_this = True
+
+                if include_this:
+                    player_threat = self.sg_player_threat_value.get()
+                    tsmin = int(td['ThreatScoreMinimum'])
+                    tsmax = int(td['ThreatScoreMaximum'])
+                    if player_threat != -1:
+                        if tsmin != -1 and tsmin > player_threat:
+                            include_this = False
+                        if tsmax != -1 and tsmax < player_threat:
+                            include_this = False
+
+                if include_this and len(match_faction) > 0:
+                    if td['FactionOwner'].find(match_faction) == -1:
+                        include_this = False
+
+                if include_this and not include_territory:
+                    if td['IsTerritory'] == 'true':
+                        include_this = False
+
+                if include_this:
+                    last_iid = self.sg_tree.insert(
+                        "",
+                        9999,
+                        "",
+                        text=key,
+                        values=(td["TriggeredOnly"], td['ThreatScoreMinimum'], td['ThreatScoreMaximum'],
+                                td["FactionOwner"], td["SpaceCargoShip"], td["SpaceRandomEncounter"])
+                    )
+                    for a_key, a_value in td.items():
+                        if a_key == "Prefabs":
+                            prefab_iid = self.sg_tree.insert(last_iid, 9999, "", text=a_key)
+                            for a_dict in a_value:
+                                self.sg_tree.insert(prefab_iid, 9999, "",
+                                                    text=a_dict["Prefab"],
+                                                    values=(f'{a_dict["Behaviour"]}', ))
+                        else:
+                            self.sg_tree.insert(last_iid, 1, "", text=a_key, values=(f"{a_value}", ))
+
+        else:
+            self.sg_tree.insert("", 1, "", text="No data loaded.", values=("", ))
+
+        self.sg_tree_yscroll = ttk.Scrollbar(
+            self.sg_output_frame, orient='vertical', command=self.sg_tree.yview)
+        self.sg_tree.configure(yscrollcommand=self.sg_tree_yscroll.set)
 
         self.sg_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
-        self.sg_tree_yscroll = ttk.Scrollbar(
-            self.sg_tab, orient='vertical', command=self.sg_tree.yview)
-        self.sg_tree.configure(yscrollcommand=self.sg_tree_yscroll.set)
         self.sg_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
 
-    def populate_components(self):
-        self.comp_tree = ttk.Treeview(self.comp_tab)
+    def clear_sg_filter(self):
+        self.sg_player_threat_value.set(-1)
+        self.sg_threat_faction_filter.set("")
+        self.sg_include_non_triggeredonly.set(0)
+        self.sg_include_triggeredonly.set(1)
+
+        self.sg_include_acs.set(1)
+        self.sg_include_lcs.set(1)
+        self.sg_include_pi.set(1)
+        self.sg_include_sre.set(1)
+        self.sg_include_scs.set(1)
+
+        self.sg_include_territory.set(0)
+
+        self.populate_sgs()
+
+    def populate_ecs(self):
+        self.comp_tree = ttk.Treeview(self.ec_output_frame)
         self.comp_tree.configure(style='TNotebook')
         self.comp_tree["columns"] = "type"
         self.comp_tree.column("#0", width=500, stretch=False)
@@ -626,38 +874,84 @@ class RAIMapper:
         self.comp_tree.heading("#0", text="SubTypeId", anchor=tk.W)
         self.comp_tree.heading("type", text="Type", anchor=tk.W)
 
-        unordered_comps = {}
-        for key in self.component_dict:
-            if self.component_dict[key]["type"] == 'Behavior':
-                unordered_comps[self.component_dict[key]["name"]] = key
+        if len(self.component_dict) > 0:
+            include_mes = False
+            if self.ec_include_mes_comp.get() == 1:
+                include_mes = True
 
-        all_behaviors = [a_key for a_key in unordered_comps.keys()]
-        all_behaviors.sort()
+            include_rai = False
+            if self.ec_include_rai_comp.get() == 1:
+                include_rai = True
 
-        index_increment = 0
-        for a_behavior in all_behaviors:
-            key = unordered_comps[a_behavior]
-        # for key in self.component_dict:
-        #     if self.component_dict[key]["type"] == 'Behavior':
-        #     print(f'adding key {key}')
-            index_increment += 1
-            last_iid = self.comp_tree.insert(
-                "",
-                index_increment,
-                "",
-                text=self.component_dict[key]["name"],
-                values=(self.component_dict[key]["type"])
-            )
-            for a_key in self.component_dict[key]['calls']:
-                self.add_comp_node(a_key, last_iid)
+            include_dereliction = False
+            if self.ec_include_dereliction.get() == 1:
+                include_dereliction = True
+
+            include_behavior = False
+            if self.ec_include_behavior.get() == 1:
+                include_behavior = True
+
+            unordered_comps = {}
+            for key in self.component_dict:
+                if self.component_dict[key]["type"] == 'Behavior':
+                    unordered_comps[self.component_dict[key]["name"]] = key
+
+            all_behaviors = [a_key for a_key in unordered_comps.keys()]
+            all_behaviors.sort()
+
+            index_increment = 0
+            for a_behavior in all_behaviors:
+                key = unordered_comps[a_behavior]
+                td = self.component_dict[key]
+
+                include_this = False
+
+                if include_mes and td['comp_type'] == 'mes':
+                    include_this = True
+
+                if include_rai and td['comp_type'] == 'rai':
+                    include_this = True
+
+                if include_dereliction and td['type'] == 'Dereliction':
+                    include_this = True
+
+                if include_behavior and td['type'] == 'Behavior':
+                    include_this = True
+
+                match_in_name = self.ec_match_in_name.get()
+                if len(match_in_name) > 0:
+                    if td['name'].find(self.ec_match_in_name.get()) == -1:
+                        include_this = False
+
+                if include_this:
+                    index_increment += 1
+                    last_iid = self.comp_tree.insert(
+                        "",
+                        index_increment,
+                        "",
+                        text=td["name"],
+                        values=(td["type"])
+                    )
+                    for a_key in td['calls']:
+                        self.add_comp_node(a_key, last_iid)
+        else:
+            self.comp_tree.insert("", 1, "", text="No data loaded.", values=("", ))
 
         self.comp_tree.bind('<<TreeviewOpen>>', self.handle_open_event)
         self.comp_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
 
         self.comp_tree_yscroll = ttk.Scrollbar(
-            self.comp_tab, orient='vertical', command=self.comp_tree.yview)
+            self.ec_output_frame, orient='vertical', command=self.comp_tree.yview)
         self.comp_tree.configure(yscrollcommand=self.comp_tree_yscroll.set)
         self.comp_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
+
+    def clear_ec_filter(self):
+        self.ec_match_in_name.set("")
+        self.ec_include_mes_comp.set(0)
+        self.ec_include_rai_comp.set(1)
+        self.ec_include_dereliction.set(0)
+        self.ec_include_behavior.set(1)
+        self.populate_ecs()
 
     def add_comp_node(self, this_key, last_iid):
         # for item_key, item_value in comp_dict[this_key].items():
@@ -680,112 +974,6 @@ class RAIMapper:
         self.comp_tree.item(parent, open=True)
         for child in self.comp_tree.get_children(parent):
             self.open_children(child)
-
-    def get_threat_sgs(self):
-        include_acs = True
-        if self.include_acs.get() == 0:
-            include_acs = False
-
-        include_lcs = True
-        if self.include_lcs.get() == 0:
-            include_lcs = False
-
-        include_pi = True
-        if self.include_pi.get() == 0:
-            include_pi = False
-
-        include_scs = True
-        if self.include_scs.get() == 0:
-            include_scs = False
-
-        include_sre = True
-        if self.include_sre.get() == 0:
-            include_sre = False
-
-        include_non_triggeredonly = True
-        if self.include_non_triggeredonly.get() == 0:
-            include_non_triggeredonly = False
-
-        include_triggeredonly = True
-        if self.include_triggeredonly.get() == 0:
-            include_triggeredonly = False
-
-        self.threat_sg_tree = ttk.Treeview(self.threat_output_frame)
-        self.threat_sg_tree["columns"] = [
-            "Triggered",
-            "Min Threat",
-            "Max Threat",
-            "Faction",
-            "SpaceRandomEncounter",
-            "SpaceCargoShip"
-        ]
-        self.threat_sg_tree.column("#0", width=350, stretch=False)
-        self.threat_sg_tree.heading("#0", text="SpawnGroup", anchor=tk.W)
-        for a_col in self.threat_sg_tree["columns"]:
-            self.threat_sg_tree.column(a_col, width=50)
-            self.threat_sg_tree.heading(a_col, text=a_col, anchor=tk.W)
-
-        ordered_sgs = []
-        for key in self.spawngroup_dict:
-            ordered_sgs.append(key)
-        ordered_sgs.sort()
-
-        for key in ordered_sgs:
-            if self.debug:
-                print(f'Evaluating key {key}')
-            td = self.spawngroup_dict[key]
-            include_this = False
-            if include_triggeredonly and td['TriggeredOnly'] == "true":
-                include_this = True
-            if include_non_triggeredonly and td['TriggeredOnly'] == "false":
-                include_this = True
-
-            if include_acs and td['AtmosphericCargoShip'] == "true":
-                include_this = True
-            if include_lcs and td['LunarCargoShip'] == "true":
-                include_this = True
-            if include_pi and td['PlanetaryInstallation'] == "true":
-                include_this = True
-            if include_scs and td['SpaceCargoShip'] == "true":
-                include_this = True
-            if include_sre and td['SpaceRandomEncounter'] == "true":
-                include_this = True
-
-            if include_this:
-                player_threat = self.player_threat_value.get()
-                tsmin = int(td['ThreatScoreMinimum'])
-                tsmax = int(td['ThreatScoreMaximum'])
-                if player_threat != -1:
-                    if tsmin != -1 and tsmin > player_threat:
-                        include_this = False
-                    if tsmax != -1 and tsmax < player_threat:
-                        include_this = False
-
-            if include_this:
-                last_iid = self.threat_sg_tree.insert(
-                    "",
-                    9999,
-                    "",
-                    text=key,
-                    values=(td["TriggeredOnly"], td['ThreatScoreMinimum'], td['ThreatScoreMaximum'],
-                            td["FactionOwner"], td["SpaceCargoShip"], td["SpaceRandomEncounter"])
-                )
-                for a_key, a_value in td.items():
-                    if a_key == "Prefabs":
-                        prefab_iid = self.threat_sg_tree.insert(last_iid, 9999, "", text=a_key)
-                        for a_dict in a_value:
-                            self.threat_sg_tree.insert(prefab_iid, 9999, "",
-                                                text=a_dict["Prefab"],
-                                                values=(f'{a_dict["Behaviour"]}', ))
-                    else:
-                        self.threat_sg_tree.insert(last_iid, 1, "", text=a_key, values=(f"{a_value}", ))
-
-        self.threat_sg_tree_yscroll = ttk.Scrollbar(
-            self.threat_output_frame, orient='vertical', command=self.threat_sg_tree.yview)
-        self.threat_sg_tree.configure(yscrollcommand=self.threat_sg_tree_yscroll.set)
-
-        self.threat_sg_tree.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
-        self.threat_sg_tree_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
 
     def export_to_csv(self):
         # =======================================================================================
@@ -903,9 +1091,9 @@ class RAIMapper:
 
 
 if __name__ == '__main__':
-    root = tk.Tk()
-    root.geometry("900x600")
+    tk_window = tk.Tk()
+    tk_window.geometry("1200x600")
 
-    raim = RAIMapper(root)
+    raim = RAIMapper(tk_window)
 
-    root.mainloop()
+    tk_window.mainloop()
