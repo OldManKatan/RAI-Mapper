@@ -144,6 +144,8 @@ def import_components(search_dir, debug=False):
             find_type = match_mes_type.findall(this_data['desc'])
             if find_type:
                 has_type = find_type[0]
+            if this_data['name'].startswith('RivalAI-Datapad'):
+                has_type = 'Datapad'
 
             if has_type:
                 if this_data['name'] not in name_to_key:
