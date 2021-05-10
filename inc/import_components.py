@@ -113,6 +113,9 @@ def import_components(search_dir, debug=False):
                         comp_type = 'rai'
                     elif a_thing.text.find('[MES ') != -1 or a_thing.text.find('[Modular Encounters ') != -1:
                         comp_type = 'mes'
+                elif a_thing.tag == 'SubtypeId':
+                    if a_thing.text.startswith('RivalAI-Datapad'):
+                        comp_type = 'rai'
 
             comps_checked += 1
 
