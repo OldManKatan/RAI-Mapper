@@ -29,6 +29,10 @@ class RAIMapper:
         self.sg_player_threat_value.set(-1)
         self.sg_threat_faction_filter = tk.StringVar()
         self.sg_threat_faction_filter.set("")
+        self.sg_match_name_filter = tk.StringVar()
+        self.sg_match_name_filter.set("")
+        self.sg_not_name_filter = tk.StringVar()
+        self.sg_not_name_filter.set("")
         self.sg_include_non_triggeredonly = tk.IntVar()
         self.sg_include_non_triggeredonly.set(0)
         self.sg_include_triggeredonly = tk.IntVar()
@@ -115,6 +119,8 @@ class RAIMapper:
                     "configure": {
                         "background": "#303030",
                         "foreground": "#C3C3C3",
+                        # "relief": "groove",
+                        # "borderwidth": 2,
                         "padding": 2
                     }
                 },
@@ -150,7 +156,7 @@ class RAIMapper:
                         "arrowcolor": "#303030",
                         "background": "#C3C3C3",
                         "foreground ": "#C3C3C3",
-                        "troughcolor": "#303030"
+                        "troughcolor": "#505050"
                     }
                 },
                 "Treeview": {
@@ -279,10 +285,31 @@ class RAIMapper:
 
         self.tabs.add(self.det_tab, text='Details')
 
-        self.det_frame = ttk.Frame(self.det_tab)
-        self.det_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
-        self.det_frame.grid_columnconfigure(1, weight=1)
+        self.det_canvas = tk.Canvas(self.det_tab, bg='#303030', borderwidth=0, relief='flat', highlightthickness=0)
+        self.det_canvas.grid_columnconfigure(0, weight=1)
+        self.det_canvas.grid_rowconfigure(0, weight=1)
+
+        self.det_frame_yscroll = ttk.Scrollbar(
+            self.det_tab, orient='vertical', command=self.det_canvas.yview)
+
+        self.det_frame = ttk.Frame(self.det_canvas)
+
+        self.det_frame.bind('<Enter>', self._bound_to_mousewheel)
+        self.det_frame.bind('<Leave>', self._unbound_to_mousewheel)
+
+        self.canvas_item = self.det_canvas.create_window(0, 0, anchor='nw', window=self.det_frame)
+        self.det_canvas.update_idletasks()
+
+        self.det_canvas.config(scrollregion=self.det_canvas.bbox("all"),
+                               yscrollcommand=self.det_frame_yscroll.set)
+        self.det_canvas.grid(row=0, column=0, sticky='nsew')
+        self.det_frame_yscroll.grid(row=0, column=1, padx=5, pady=5, sticky='nse')
+
+        self.det_frame.grid_columnconfigure(0, minsize=50)
+        self.det_frame.grid_columnconfigure(2, weight=1)
         self.det_frame.grid_rowconfigure(98, weight=1)
+
+        # self.det_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
 
         self.l_det_nodata = ttk.Label(
             self.det_frame,
@@ -290,6 +317,9 @@ class RAIMapper:
             style='Header.TLabel'
         )
         self.l_det_nodata.grid(row=0, column=0, padx=5, pady=5, sticky='nw')
+
+        self.det_frame.bind("<Configure>", self.OnFrameConfigure)
+        self.det_canvas.bind('<Configure>', self.FrameWidth)
 
         # #############################################
         # SPAWNGROUPS
@@ -326,11 +356,30 @@ class RAIMapper:
             width=10
         )
         self.sg_e_faction_filter.grid(row=1, column=0, columnspan=2, padx=10, pady=3, sticky='w')
-        self.sg_l_faction_filter = ttk.Label(self.sg_select_frame, text="Match Faction")
+        self.sg_l_faction_filter = ttk.Label(self.sg_select_frame, text="Match in Faction")
         self.sg_l_faction_filter.grid(row=1, column=2, padx=3, pady=3, sticky='w')
 
-        self.sg_sep_left_sep1 = ttk.Separator(self.sg_select_frame)
-        self.sg_sep_left_sep1.grid(row=2, column=0, columnspan=3, padx=20, pady=7, sticky='ew')
+        self.sg_e_match_name_filter = ttk.Entry(
+            self.sg_select_frame,
+            font=("Calibri", 12),
+            textvariable=self.sg_match_name_filter,
+            validate='key',
+            width=10
+        )
+        self.sg_e_match_name_filter.grid(row=2, column=0, columnspan=2, padx=10, pady=3, sticky='w')
+        self.sg_l_match_name_filter = ttk.Label(self.sg_select_frame, text="Match in Name")
+        self.sg_l_match_name_filter.grid(row=2, column=2, padx=3, pady=3, sticky='w')
+
+        self.sg_e_not_name_filter = ttk.Entry(
+            self.sg_select_frame,
+            font=("Calibri", 12),
+            textvariable=self.sg_not_name_filter,
+            validate='key',
+            width=10
+        )
+        self.sg_e_not_name_filter.grid(row=3, column=0, columnspan=2, padx=10, pady=3, sticky='w')
+        self.sg_l_not_name_filter = ttk.Label(self.sg_select_frame, text="Filter in Name")
+        self.sg_l_not_name_filter.grid(row=3, column=2, padx=3, pady=3, sticky='w')
 
         self.sg_ch_inc_scs = ttk.Checkbutton(self.sg_select_frame, variable=self.sg_include_acs)
         self.sg_ch_inc_scs.grid(row=0, column=3, padx=10, pady=3, sticky='ew')
@@ -441,20 +490,6 @@ class RAIMapper:
         self.ec_l_comp_name = ttk.Label(self.ec_select_frame, text="Match in Name")
         self.ec_l_comp_name.grid(row=0, column=2, padx=3, pady=3, sticky='w')
 
-        # self.ec_e_faction_filter = ttk.Entry(
-        #     self.ec_select_frame,
-        #     font=("Calibri", 12),
-        #     textvariable=self.sg_threat_faction_filter,
-        #     validate='key',
-        #     width=10
-        # )
-        # self.ec_e_faction_filter.grid(row=1, column=0, columnspan=2, padx=10, pady=3, sticky='w')
-        # self.ec_l_faction_filter = ttk.Label(self.ec_select_frame, text="Match Faction")
-        # self.ec_l_faction_filter.grid(row=1, column=2, padx=3, pady=3, sticky='w')
-        #
-        # self.ec_sep_left_sep1 = ttk.Separator(self.ec_select_frame)
-        # self.ec_sep_left_sep1.grid(row=2, column=0, columnspan=3, padx=20, pady=7, sticky='ew')
-
         self.ec_ch_inc_scs = ttk.Checkbutton(self.ec_select_frame, variable=self.ec_include_rai_comp)
         self.ec_ch_inc_scs.grid(row=0, column=3, padx=10, pady=3, sticky='ew')
         self.ec_l_inc_scs = ttk.Label(self.ec_select_frame, text="Include RAI Components")
@@ -464,21 +499,6 @@ class RAIMapper:
         self.ec_ch_inc_scs.grid(row=1, column=3, padx=10, pady=3, sticky='ew')
         self.ec_l_inc_scs = ttk.Label(self.ec_select_frame, text="Include MES Components")
         self.ec_l_inc_scs.grid(row=1, column=4, padx=10, pady=3, sticky='ew')
-
-        # self.ec_ch_inc_scs = ttk.Checkbutton(self.ec_select_frame, variable=self.sg_include_pi)
-        # self.ec_ch_inc_scs.grid(row=2, column=3, padx=10, pady=3, sticky='ew')
-        # self.ec_l_inc_scs = ttk.Label(self.ec_select_frame, text="Include PlanetaryInstallation")
-        # self.ec_l_inc_scs.grid(row=2, column=4, padx=10, pady=3, sticky='ew')
-        #
-        # self.ec_ch_inc_scs = ttk.Checkbutton(self.ec_select_frame, variable=self.sg_include_scs)
-        # self.ec_ch_inc_scs.grid(row=3, column=3, padx=10, pady=3, sticky='ew')
-        # self.ec_l_inc_scs = ttk.Label(self.ec_select_frame, text="Include SpaceCargoShips")
-        # self.ec_l_inc_scs.grid(row=3, column=4, padx=10, pady=3, sticky='ew')
-        #
-        # self.ec_ch_inc_sre = ttk.Checkbutton(self.ec_select_frame, variable=self.sg_include_sre)
-        # self.ec_ch_inc_sre.grid(row=4, column=3, padx=10, pady=3, sticky='ew')
-        # self.ec_l_inc_sre = ttk.Label(self.ec_select_frame, text="Include SpaceRandomEncounters")
-        # self.ec_l_inc_sre.grid(row=4, column=4, padx=10, pady=3, sticky='ew')
 
         self.ec_b_get_sg = tk.Button(
             self.ec_select_frame,
@@ -515,19 +535,6 @@ class RAIMapper:
         self.ec_ch_inc_derel.grid(row=1, column=5, padx=10, pady=3, sticky='ew')
         self.ec_l_inc_derel = ttk.Label(self.ec_select_frame, text="Include Dereliction")
         self.ec_l_inc_derel.grid(row=1, column=6, padx=10, pady=3, sticky='ew')
-        #
-        # self.ec_sep_c3_1 = ttk.Separator(self.ec_select_frame)
-        # self.ec_sep_c3_1.grid(row=2, column=5, columnspan=2, padx=20, pady=7, sticky='ew')
-        #
-        # self.ec_ch_inc_territory = ttk.Checkbutton(self.ec_select_frame, variable=self.sg_include_territory)
-        # self.ec_ch_inc_territory.grid(row=3, column=5, padx=10, pady=3, sticky='ew')
-        # self.ec_l_inc_territory = ttk.Label(self.ec_select_frame, text="Include Territories")
-        # self.ec_l_inc_territory.grid(row=3, column=6, columnspan=2, padx=10, pady=3, sticky='ew')
-        #
-        # self.ec_ch_inc_derelict = ttk.Checkbutton(self.ec_select_frame, variable=self.include_dereliction)
-        # self.ec_ch_inc_derelict.grid(row=4, column=5, padx=10, pady=3, sticky='ew')
-        # self.ec_l_inc_derelict = ttk.Label(self.ec_select_frame, text="Include Dereliction Profiles")
-        # self.ec_l_inc_derelict.grid(row=4, column=6, columnspan=2, padx=10, pady=3, sticky='ew')
 
         self.ec_sep_bottom = ttk.Separator(self.ec_select_frame)
         self.ec_sep_bottom.grid(row=99, column=0, columnspan=98, padx=20, pady=7, sticky='ew')
@@ -562,7 +569,6 @@ class RAIMapper:
         print(self.parent_file_path)
         returned_spawngroup_data = import_spawngroups(self.parent_file_path)
         self.spawngroup_dict = returned_spawngroup_data['data']
-        # self.populate_spawngroups()
         self.populate_sgs()
 
         returned_component_data = import_components(self.parent_file_path)
@@ -587,8 +593,8 @@ class RAIMapper:
         self.b_lm_exp_json["state"] = "normal"
 
     def populate_summary(self, sg_summ_dict, comp_summ_dict):
-        self.summ_frame = ttk.Frame(self.summ_tab)
-        self.summ_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+        for widgets in self.summ_frame.winfo_children():
+            widgets.destroy()
 
         ttk.Label(
             self.summ_frame, text="MES SpawnGroup Summary", style="Header.TLabel"
@@ -617,30 +623,27 @@ class RAIMapper:
             row_counter += 1
 
     def populate_details(self, comp_det_dict):
-        self.det_frame.grid_forget()
-
-        self.det_frame = ttk.Frame(self.det_tab)
-        self.det_frame.grid_columnconfigure(1, weight=1)
-
         row_counter = 2
+        for widgets in self.det_frame.winfo_children():
+            widgets.destroy()
 
         ttk.Label(
             self.det_frame, text="RivalAI Component Details", style="Header.TLabel", foreground="#7290f6"
-        ).grid(row=0, column=0, columnspan=2, padx=10, sticky='ew')
+        ).grid(row=0, column=0, columnspan=3, padx=10, sticky='ew')
 
         ttk.Label(
             self.det_frame, text="Unused Components:", style="Header.TLabel"
-        ).grid(row=1, column=0, columnspan=2, padx=10, sticky='ew')
+        ).grid(row=1, column=0, columnspan=3, padx=10, sticky='ew')
 
         if comp_det_dict['unused_comps']:
             for value in comp_det_dict['unused_comps']:
                 print(value)
                 ttk.Label(
                     self.det_frame, text=value[0], anchor=tk.W
-                ).grid(row=row_counter, column=0, padx=10, sticky='ew')
+                ).grid(row=row_counter, column=1, padx=10, sticky='ew')
                 ttk.Label(
                     self.det_frame, text=value[1], anchor=tk.W
-                ).grid(row=row_counter, column=1, padx=10, sticky='ew')
+                ).grid(row=row_counter, column=2, padx=10, sticky='ew')
                 row_counter += 1
         else:
             ttk.Label(
@@ -650,24 +653,24 @@ class RAIMapper:
 
         ttk.Label(
             self.det_frame, text="Referenced Components that do not exist:", style="Header.TLabel"
-        ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+        ).grid(row=row_counter, column=0, columnspan=3, padx=10, sticky='ew')
         row_counter += 1
 
         if comp_det_dict['noexist_comps']:
             for value in comp_det_dict['noexist_comps']:
                 ttk.Label(
                     self.det_frame, text=value, anchor=tk.W
-                ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+                ).grid(row=row_counter, column=1, columnspan=2, padx=10, sticky='ew')
                 row_counter += 1
         else:
             ttk.Label(
                 self.det_frame, text="None", anchor=tk.W
-            ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+            ).grid(row=row_counter, column=1, columnspan=2, padx=10, sticky='ew')
             row_counter += 1
 
         ttk.Label(
             self.det_frame, text="Spawngroups in Spawn Components that do not exist:", style="Header.TLabel"
-        ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+        ).grid(row=row_counter, column=0, columnspan=3, padx=10, sticky='ew')
         row_counter += 1
 
         if comp_det_dict['noexist_sgs']:
@@ -675,58 +678,67 @@ class RAIMapper:
                 sg_name, spawn_comp_name = value
                 ttk.Label(
                     self.det_frame, text=sg_name, anchor=tk.W
-                ).grid(row=row_counter, column=0, columnspan=1, padx=10, sticky='ew')
+                ).grid(row=row_counter, column=1, columnspan=1, padx=10, sticky='ew')
                 ttk.Label(
                     self.det_frame, text=spawn_comp_name, anchor=tk.W
-                ).grid(row=row_counter, column=1, columnspan=1, padx=10, sticky='ew')
+                ).grid(row=row_counter, column=2, columnspan=1, padx=10, sticky='ew')
                 row_counter += 1
         else:
             ttk.Label(
                 self.det_frame, text="None", anchor=tk.W
-            ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+            ).grid(row=row_counter, column=0, columnspan=3, padx=10, sticky='ew')
             row_counter += 1
 
         ttk.Label(
             self.det_frame, text="Duplicated Components:", style="Header.TLabel"
-        ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+        ).grid(row=row_counter, column=0, columnspan=3, padx=10, sticky='ew')
         row_counter += 1
 
         if comp_det_dict['duplicate_data']:
             for key, value in comp_det_dict['duplicate_data'].items():
                 ttk.Label(
                     self.det_frame, text=f'"{key}" shows up in: ', anchor=tk.W
-                ).grid(row=row_counter, column=0, padx=10, sticky='ew')
+                ).grid(row=row_counter, column=1, padx=10, sticky='ew')
                 ttk.Label(
                     self.det_frame, text=',\n'.join(value), anchor=tk.W
-                ).grid(row=row_counter, column=1, padx=10, sticky='ew')
+                ).grid(row=row_counter, column=2, padx=10, sticky='ew')
                 row_counter += 1
         else:
             ttk.Label(
                 self.det_frame, text="None", anchor=tk.W
-            ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+            ).grid(row=row_counter, column=1, columnspan=2, padx=10, sticky='ew')
             row_counter += 1
 
         ttk.Label(
             self.det_frame, text="File Errors:", style="Header.TLabel"
-        ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+        ).grid(row=row_counter, column=0, columnspan=3, padx=10, sticky='ew')
         row_counter += 1
 
         if comp_det_dict['file_errors']:
             for value in comp_det_dict['file_errors']:
                 ttk.Label(
                     self.det_frame, text=value, anchor=tk.W
-                ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+                ).grid(row=row_counter, column=1, columnspan=2, padx=10, sticky='ew')
                 row_counter += 1
         else:
             ttk.Label(
                 self.det_frame, text="None", anchor=tk.W
-            ).grid(row=row_counter, column=0, columnspan=2, padx=10, sticky='ew')
+            ).grid(row=row_counter, column=1, columnspan=2, padx=10, sticky='ew')
             row_counter += 1
 
-        self.det_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+        for i in range(0, 2):
+            ttk.Label(
+                self.det_frame, text=" ", anchor=tk.W
+            ).grid(row=row_counter, column=1, columnspan=2, padx=10, sticky='ew')
+            row_counter += 1
+
+        self.det_canvas.update_idletasks()
+        self.det_canvas.config(scrollregion=self.det_canvas.bbox("all"))
 
     def populate_sgs(self):
         match_faction = self.sg_threat_faction_filter.get()
+        match_name = self.sg_match_name_filter.get()
+        not_name = self.sg_not_name_filter.get()
 
         include_acs = True
         if self.sg_include_acs.get() == 0:
@@ -759,6 +771,9 @@ class RAIMapper:
         include_territory = True
         if self.sg_include_territory.get() == 0:
             include_territory = False
+
+        for widgets in self.sg_output_frame.winfo_children():
+            widgets.destroy()
 
         self.sg_tree = ttk.Treeview(self.sg_output_frame)
         self.sg_tree["columns"] = [
@@ -816,6 +831,14 @@ class RAIMapper:
                     if td['FactionOwner'].find(match_faction) == -1:
                         include_this = False
 
+                if include_this and len(match_name) > 0:
+                    if key.find(match_name) == -1:
+                        include_this = False
+
+                if include_this and len(not_name) > 0:
+                    if key.find(not_name) != -1:
+                        include_this = False
+
                 if include_this and not include_territory:
                     if td['IsTerritory'] == 'true':
                         include_this = False
@@ -852,6 +875,8 @@ class RAIMapper:
     def clear_sg_filter(self):
         self.sg_player_threat_value.set(-1)
         self.sg_threat_faction_filter.set("")
+        self.sg_match_name_filter.set("")
+        self.sg_not_name_filter.set("")
         self.sg_include_non_triggeredonly.set(0)
         self.sg_include_triggeredonly.set(1)
 
@@ -866,6 +891,9 @@ class RAIMapper:
         self.populate_sgs()
 
     def populate_ecs(self):
+        for widgets in self.ec_output_frame.winfo_children():
+            widgets.destroy()
+
         self.comp_tree = ttk.Treeview(self.ec_output_frame)
         self.comp_tree.configure(style='TNotebook')
         self.comp_tree["columns"] = "type"
@@ -1088,6 +1116,22 @@ class RAIMapper:
 
         with open("export_components.json", 'w') as json_file:
             json.dump(self.component_dict, json_file, indent=2)
+
+    def _bound_to_mousewheel(self, event):
+        self.det_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
+    def _unbound_to_mousewheel(self, event):
+        self.det_canvas.unbind_all("<MouseWheel>")
+
+    def _on_mousewheel(self, event):
+        self.det_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+    def FrameWidth(self, event):
+        canvas_width = event.width
+        self.det_canvas.itemconfig(self.canvas_item, width=canvas_width)
+
+    def OnFrameConfigure(self, event):
+        self.det_canvas.configure(scrollregion=self.det_canvas.bbox("all"))
 
 
 if __name__ == '__main__':
