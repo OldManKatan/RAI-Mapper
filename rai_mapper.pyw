@@ -21,6 +21,9 @@ class RAIMapper:
         self.root.title("RAI-Mapper")
         self.chk_thr = self.root.register(check_threat)
 
+        icon_photo = tk.PhotoImage(file=r"inc\se_icon.png")
+        self.root.wm_iconphoto(False, icon_photo)
+
         self.parent_file_path = ''
         self.spawngroup_dict = {}
         self.component_dict = {}
@@ -978,7 +981,7 @@ class RAIMapper:
         self.ec_include_mes_comp.set(0)
         self.ec_include_rai_comp.set(1)
         self.ec_include_dereliction.set(0)
-        self.ec_include_behavior.set(1)
+        self.ec_include_behavior.set(0)
         self.populate_ecs()
 
     def add_comp_node(self, this_key, last_iid):
