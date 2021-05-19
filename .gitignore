@@ -29,3 +29,4 @@ dist/rai_mapper.exe
 dist/rai_mapper.zip
 dist/report_keys.txt
 test.py
+export_spawngroups.csv
