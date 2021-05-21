@@ -1051,17 +1051,7 @@ class RAIMapper:
             for each_sg in self.spawngroup_dict:
                 if len(each_sg) == 0:
                     continue
-                triggered_only = 'false'
-                if (self.spawngroup_dict[each_sg]['SpaceCargoShip'] == 'false' and
-                        self.spawngroup_dict[each_sg]['SpaceRandomEncounter'] == 'false' and
-                        self.spawngroup_dict[each_sg]['LunarCargoShip'] == 'false' and
-                        self.spawngroup_dict[each_sg]['AtmosphericCargoShip'] == 'false' and
-                        self.spawngroup_dict[each_sg]['PlanetaryInstallation'] == 'false'):
-                    self.spawngroup_dict[each_sg]['TriggeredOnly'] = 'true'
-                else:
-                    self.spawngroup_dict[each_sg]['TriggeredOnly'] = 'false'
-
-                this_row = [triggered_only]
+                this_row = [self.spawngroup_dict[each_sg]['TriggeredOnly']]
                 for a_field in all_fields:
                     if a_field == 'Prefabs':
                         prefab_str = ''
