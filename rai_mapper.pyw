@@ -21,7 +21,7 @@ class RAIMapper:
         self.root.title("RAI-Mapper")
         self.chk_thr = self.root.register(check_threat)
 
-        icon_photo = tk.PhotoImage(file=r"inc\se_icon.png")
+        icon_photo = tk.PhotoImage(file=r"se_icon.png")
         self.root.wm_iconphoto(False, icon_photo)
 
         self.parent_file_path = ''
