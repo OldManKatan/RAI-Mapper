@@ -11,6 +11,8 @@ inc/__pycache__/import_components.cpython-36.pyc
 inc/__pycache__/import_spawngroups.cpython-36.pyc
 export_components.json
 export_spawngroups.json
+export_components.csv
+export_spawngroups.csv
 __pycache__/rai_mapper.cpython-36.pyc
 build/rai_mapper/Analysis-00.toc
 build/rai_mapper/base_library.zip
@@ -28,3 +30,5 @@ build/rai_mapper/xref-rai_mapper.html
 dist/rai_mapper.exe
 dist/rai_mapper.zip
 dist/report_keys.txt
+test.py
+.idea/inspectionProfiles/profiles_settings.xml
